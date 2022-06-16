@@ -1,0 +1,19 @@
+{
+  "name": "te/te",
+  "description": "description",
+  "minimum-stability": "stable",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "admin",
+      "email": "email@example.com"
+    }
+  ],
+  "require": {
+  },
+  "autoload": {
+    "psr-4": {
+      "Te\\": "src"
+    }
+  }
+}
