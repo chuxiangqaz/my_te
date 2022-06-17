@@ -10,11 +10,21 @@ class Server
     private $mainSocket;
 
     /**
+     * @var string
+     */
+    private $address;
+
+    /**
      * @throws \Exception
      */
     public function __construct($address)
     {
-        $protocol = substr($address, 0, 3);
+        $this->address = $address;
+    }
+
+    public function listen()
+    {
+        $protocol = substr( $this->address, 0, 3);
         $flag = null;
         switch (strtolower($protocol)) {
             case 'tcp':
@@ -28,7 +38,7 @@ class Server
         }
 
         // socket, bind, listen
-        $socket = stream_socket_server($address, $errCode, $errMsg, $flag);
+        $socket = stream_socket_server( $this->address, $errCode, $errMsg, $flag);
         if (!is_resource($socket)) {
             err("create server err" . $errMsg, $errCode);
         }
@@ -36,9 +46,12 @@ class Server
         $this->mainSocket = $socket;
     }
 
+
     public function accept()
     {
-        $fd = stream_socket_accept($this->mainSocket );
-        echo "客户端连接:". $fd;
+        $fd = stream_socket_accept($this->mainSocket);
+        if (is_resource($fd)) {
+            echo "客户端连接:". $fd;
+        }
     }
 }
