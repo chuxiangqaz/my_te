@@ -29,6 +29,7 @@ class Server
         $this->address = $address;
     }
 
+
     public function listen()
     {
         $protocol = substr($this->address, 0, 3);
@@ -59,8 +60,11 @@ class Server
     public function eventLoop()
     {
         while (1) {
-            $read = self::$connection;
             $read[] = $this->mainSocket;
+            /** @var $connect TcpConnection */
+            foreach (self::$connection as $connect) {
+                $read[] = $connect->getFd();
+            }
             $write = [];
             $except = [];
 
@@ -107,10 +111,13 @@ class Server
     public function accept()
     {
         // 不设置超时事件,将默认使用php.ini 里面配置的事件.
-        $fd = stream_socket_accept($this->mainSocket, -1);
-        self::$connection[] = $fd;
-        if (is_resource($fd)) {
-            echo "客户端连接:" . $fd;
+        $fd = stream_socket_accept($this->mainSocket, -1, $address);
+        if (!is_resource($fd)) {
+            record(RECORD_ERR, "access is not resource");
+            return;
         }
+
+        $connection = new TcpConnection($fd, $address);
+        self::$connection[] = $connection;
     }
 }
