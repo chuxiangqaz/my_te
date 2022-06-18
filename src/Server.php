@@ -22,11 +22,23 @@ class Server
     private static $connection = [];
 
     /**
+     * 事件注册容器
+     *
+     * @var array
+     */
+    private $event;
+
+    /**
      * @throws \Exception
      */
     public function __construct($address)
     {
         $this->address = $address;
+    }
+
+    public function on(string $eventName, \Closure $fu)
+    {
+        $this->event[$eventName] = $fu;
     }
 
 
@@ -116,8 +128,11 @@ class Server
             record(RECORD_ERR, "access is not resource");
             return;
         }
-
         $connection = new TcpConnection($fd, $address);
+        if (isset($this->event[EVENT_CONNECT])) {
+            $this->event[EVENT_CONNECT]($this, $connection);
+        }
+
         self::$connection[] = $connection;
     }
 }

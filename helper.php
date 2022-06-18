@@ -4,6 +4,9 @@ const RECORD_INFO = 'info';
 const RECORD_ERR = 'error';
 const RECORD_DEBUG = 'debug';
 
+// 事件注册容器枚举
+const EVENT_CONNECT = 'connect';
+
 function err($errMsg, $errCode = -1)
 {
     throw new \Exception($errMsg, $errCode);
