@@ -25,6 +25,16 @@ class TcpConnection
     }
 
     /**
+     * 接受客户端数据
+     */
+    public function recv()
+    {
+        $data = fread($this->fd, 1024);
+        fprintf(STDOUT, "recvmsg: [%s]%s", $this->address, $data);
+        // 所以业务处理这块必须是多线程
+    }
+
+    /**
      * @return string
      */
     public function getAddress()
@@ -39,7 +49,6 @@ class TcpConnection
     {
         return $this->fd;
     }
-
 
 
 }

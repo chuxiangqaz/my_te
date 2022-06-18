@@ -10,6 +10,7 @@
     }
   ],
   "require": {
+    "symfony/var-dumper": "^5.4"
   },
   "autoload": {
     "psr-4": {

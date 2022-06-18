@@ -17,7 +17,7 @@ class Server
     /**
      * 客户端连接 fd
      *
-     * @var array
+     * @var TcpConnection[]
      */
     private static $connection = [];
 
@@ -73,7 +73,6 @@ class Server
     {
         while (1) {
             $read[] = $this->mainSocket;
-            /** @var $connect TcpConnection */
             foreach (self::$connection as $connect) {
                 $read[] = $connect->getFd();
             }
@@ -109,11 +108,10 @@ class Server
                     // 监听socket
                     if ($fd === $this->mainSocket) {
                         $this->accept();
-                    } else {
-                        // 连接 socket
-                        $data = stream_socket_recvfrom($fd, 1024, 0, $address);
-                        fprintf(STDOUT, "recvfrom address=%d, data=%s \n", $fd, $data);
                     }
+
+                    // 连接 socket
+                    self::$connection[(int)$fd]->recv();
                 }
             }
         }
@@ -133,6 +131,6 @@ class Server
             $this->event[EVENT_CONNECT]($this, $connection);
         }
 
-        self::$connection[] = $connection;
+        self::$connection[(int)$fd] = $connection;
     }
 }
