@@ -13,8 +13,9 @@ $server->on(EVENT_CONNECT, function (Server $server, TcpConnection $connection) 
     fprintf(STDOUT, "客户端连接, ip=%s\n", $connection->getAddress());
 });
 
-$server->on(EVENT_RECEIVE, function (Server $server, TcpConnection $connection) {
-    fprintf(STDOUT, "客户端连接, ip=%s\n", $connection->getAddress());
+$server->on(EVENT_RECEIVE, function (Server $server, TcpConnection $connection, $data) {
+    fprintf(STDOUT, "recvmsg: [%s]%s", $connection->getAddress(), $data);
+    $connection->write($data);
 });
 
 

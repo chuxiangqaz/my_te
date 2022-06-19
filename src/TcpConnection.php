@@ -17,11 +17,17 @@ class TcpConnection
      */
     private $fd;
 
+    /**
+     * @var Server
+     */
+    private $server;
 
-    public function __construct($fd, $address)
+
+    public function __construct($fd, $address, $server)
     {
         $this->fd = $fd;
         $this->address = $address;
+        $this->server = $server;
     }
 
     /**
@@ -30,11 +36,17 @@ class TcpConnection
     public function recv()
     {
         $data = fread($this->fd, 1024);
-        fprintf(STDOUT, "recvmsg: [%s]%s", $this->address, $data);
-        // 所以业务处理这块必须是多线程
-        $this->write('hello,word');
+        if ($data ) {
+           $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $data);
+        }
     }
 
+    /**
+     * 给客户端发生数据
+     *
+     * @param string $data
+     * @return void
+     */
     public function write($data)
     {
         $len = stream_socket_sendto($this->fd, $data, 0);

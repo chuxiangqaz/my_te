@@ -116,6 +116,14 @@ class Server
         }
     }
 
+    public function runEvent($eventName, ...$args)
+    {
+        if (!isset($eventName)) {
+            err("not register event:$eventName");
+        }
+
+        $this->event[$eventName](...$args);
+    }
 
     public function accept()
     {
@@ -125,9 +133,9 @@ class Server
             record(RECORD_ERR, "access is not resource");
             return;
         }
-        $connection = new TcpConnection($fd, $address);
+        $connection = new TcpConnection($fd, $address, $this);
         if (isset($this->event[EVENT_CONNECT])) {
-            $this->event[EVENT_CONNECT]($this, $connection);
+            $this->runEvent(EVENT_CONNECT, $this, $connection);
         }
 
         self::$connection[(int)$fd] = $connection;
