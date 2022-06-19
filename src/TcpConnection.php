@@ -41,9 +41,17 @@ class TcpConnection
     public function recv()
     {
         $data = fread($this->fd, $this->readBufferSize);
-        if ($data ) {
-           $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $data);
+        if ($data == "" ||  $data === false) {
+            if (feof($this->fd) || !is_resource($data)) {
+                // 客户端关闭
+                $this->server->closeClient($this->fd);
+            }
+            return;
+
         }
+
+        // 接受客户端数据
+        $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $data);
     }
 
     /**

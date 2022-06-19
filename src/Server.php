@@ -77,6 +77,7 @@ class Server
     public function eventLoop()
     {
         while (1) {
+            $read = [];
             $read[] = $this->mainSocket;
             foreach (self::$connection as $connect) {
                 $read[] = $connect->getFd();
@@ -145,5 +146,18 @@ class Server
         }
 
         self::$connection[(int)$fd] = $connection;
+    }
+
+    /**
+     * 客户端关闭
+     *
+     * @param $fd
+     * @return void
+     */
+    public function closeClient($fd)
+    {
+        $this->runEvent(EVENT_CLOSE, $this, self::$connection[(int)$fd]);
+        unset(self::$connection[(int)$fd]);
+        @fclose($fd);
     }
 }

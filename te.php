@@ -18,9 +18,8 @@ $server->on(EVENT_RECEIVE, function (Server $server, TcpConnection $connection, 
     $connection->write($data);
 });
 
-$server->on(EVENT_CLOSE, function (Server $server, TcpConnection $connection, $data) {
-    fprintf(STDOUT, "recvmsg: [%s]%s", $connection->getAddress(), $data);
-    $connection->write($data);
+$server->on(EVENT_CLOSE, function (Server $server, TcpConnection $connection) {
+    fprintf(STDOUT, "客户端关闭了%s " . PHP_EOL, $connection->getAddress());
 });
 
 
