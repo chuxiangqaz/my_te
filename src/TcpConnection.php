@@ -32,6 +32,13 @@ class TcpConnection
         $data = fread($this->fd, 1024);
         fprintf(STDOUT, "recvmsg: [%s]%s", $this->address, $data);
         // 所以业务处理这块必须是多线程
+        $this->write('hello,word');
+    }
+
+    public function write($data)
+    {
+        $len = stream_socket_sendto($this->fd, $data, 0);
+        fprintf(STDOUT, "send msg len=%d\n", $len);
     }
 
     /**

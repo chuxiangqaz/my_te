@@ -41,7 +41,6 @@ class Server
         $this->event[$eventName] = $fu;
     }
 
-
     public function listen()
     {
         $protocol = substr($this->address, 0, 3);
@@ -108,10 +107,10 @@ class Server
                     // 监听socket
                     if ($fd === $this->mainSocket) {
                         $this->accept();
+                    } else {
+                        // 连接 socket
+                        self::$connection[(int)$fd]->recv();
                     }
-
-                    // 连接 socket
-                    self::$connection[(int)$fd]->recv();
                 }
             }
         }

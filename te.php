@@ -13,6 +13,11 @@ $server->on(EVENT_CONNECT, function (Server $server, TcpConnection $connection) 
     fprintf(STDOUT, "客户端连接, ip=%s\n", $connection->getAddress());
 });
 
+$server->on(EVENT_RECEIVE, function (Server $server, TcpConnection $connection) {
+    fprintf(STDOUT, "客户端连接, ip=%s\n", $connection->getAddress());
+});
+
+
 $server->listen();
 
 $server->eventLoop();
