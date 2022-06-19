@@ -41,6 +41,12 @@ class Server
         $this->event[$eventName] = $fu;
     }
 
+    public function start()
+    {
+        $this->listen();
+        $this->eventLoop();
+    }
+
     public function listen()
     {
         $protocol = substr($this->address, 0, 3);

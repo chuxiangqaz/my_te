@@ -18,8 +18,11 @@ $server->on(EVENT_RECEIVE, function (Server $server, TcpConnection $connection, 
     $connection->write($data);
 });
 
+$server->on(EVENT_CLOSE, function (Server $server, TcpConnection $connection, $data) {
+    fprintf(STDOUT, "recvmsg: [%s]%s", $connection->getAddress(), $data);
+    $connection->write($data);
+});
 
-$server->listen();
 
-$server->eventLoop();
+$server->start();
 

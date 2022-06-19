@@ -7,6 +7,8 @@ const RECORD_DEBUG = 'debug';
 // 事件注册容器枚举
 const EVENT_CONNECT = 'connect';
 const EVENT_RECEIVE = 'receive';
+const EVENT_CLOSE = 'close';
+
 
 function err($errMsg, $errCode = -1)
 {

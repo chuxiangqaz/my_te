@@ -22,6 +22,11 @@ class TcpConnection
      */
     private $server;
 
+    /**
+     * @var int
+     */
+    private $readBufferSize = 1024;
+
 
     public function __construct($fd, $address, $server)
     {
@@ -35,7 +40,7 @@ class TcpConnection
      */
     public function recv()
     {
-        $data = fread($this->fd, 1024);
+        $data = fread($this->fd, $this->readBufferSize);
         if ($data ) {
            $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $data);
         }
