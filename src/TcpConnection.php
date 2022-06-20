@@ -13,6 +13,8 @@ class TcpConnection
     private $address;
 
     /**
+     * 连接 socket
+     *
      * @var resource
      */
     private $fd;
@@ -23,6 +25,30 @@ class TcpConnection
     private $server;
 
     /**
+     * 表示当前连接接受缓冲区的大小
+     *
+     * @var int
+     */
+    private $recvBufferSize = 1024 * 100;
+
+
+    /**
+     * 表示当前连接目前接收的字节数大小
+     *
+     * @var int
+     */
+    private $recvLen = 0;
+
+    /**
+     * 表示当前连接接受的字节数大小
+     *
+     * @var int
+     */
+    private $recvBufferFull = 0;
+
+    /**
+     *  接受数据的边界
+     *
      * @var int
      */
     private $readBufferSize = 1024;
@@ -40,18 +66,22 @@ class TcpConnection
      */
     public function recv()
     {
-        $data = fread($this->fd, $this->readBufferSize);
-        if ($data == "" ||  $data === false) {
-            if (feof($this->fd) || !is_resource($data)) {
-                // 客户端关闭
-                $this->server->closeClient($this->fd);
+        if ($this->recvLen < $this->recvBufferSize) {
+            $data = fread($this->fd, $this->readBufferSize);
+            if ($data == "" || $data === false) {
+                if (feof($this->fd) || !is_resource($data)) {
+                    // 客户端关闭
+                    $this->server->closeClient($this->fd);
+                }
+                return;
+
             }
-            return;
 
+            // 接受客户端数据
+            $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $data);
+        } else {
+            $this->recvBufferFull++;
         }
-
-        // 接受客户端数据
-        $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $data);
     }
 
     /**
