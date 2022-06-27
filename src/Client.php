@@ -2,6 +2,8 @@
 
 namespace Te;
 
+use Te\Protocols\Protocols;
+
 class Client
 {
 
@@ -58,10 +60,18 @@ class Client
      */
     private $event;
 
+    /**
+     * 事件实例
+     *
+     * @var Protocols
+     */
+    private $protocols;
 
-    public function __construct($address)
+
+    public function __construct($address, Protocols $protocols)
     {
         $this->address = $address;
+        $this->protocols = $protocols;
     }
 
     public function start()
