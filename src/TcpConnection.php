@@ -47,6 +47,13 @@ class TcpConnection
     private $recvBufferFull = 0;
 
     /**
+     * 表示从缓冲区中拿到的数据
+     *
+     * @var string
+     */
+    private $bufferData = '';
+
+    /**
      *  接受数据的边界
      *
      * @var int
@@ -68,14 +75,18 @@ class TcpConnection
     {
         if ($this->recvLen < $this->recvBufferSize) {
             $data = fread($this->fd, $this->readBufferSize);
-            if ($data == "" || $data === false) {
-                if (feof($this->fd) || !is_resource($data)) {
+            if ($data === "" || $data === false) {
+                if (feof($this->fd) || !is_resource($this->fd)) {
                     // 客户端关闭
                     $this->server->closeClient($this->fd);
                 }
                 return;
 
             }
+
+            $this->recvLen += strlen($data);
+            $this->bufferData .= $data;
+
 
             // 接受客户端数据
             $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $data);
