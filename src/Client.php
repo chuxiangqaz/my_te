@@ -150,23 +150,32 @@ class Client
             $this->recvLen += strlen($data);
             $this->bufferData .= $data;
 
+            // 判断数据是否完整
+            if (!$this->protocols->integrity($this->bufferData)) {
+                return;
+            }
+
+            // 解码数据
+            [$header, $cmd, $load] = $this->protocols->decode($this->bufferData);
+            $this->bufferData = substr($this->bufferData, $header);
 
             // 接受客户端数据
-            $this->runEvent(EVENT_RECEIVE, $this, $data);
+            $this->runEvent(EVENT_RECEIVE, $this, $header, $cmd, $load);
         } else {
             $this->recvBufferFull++;
         }
     }
 
     /**
-     * 给客户端发生数据
+     * 给服务端发生数据
      *
      * @param string $data
      * @return void
      */
     public function write($data)
     {
-        $len = stream_socket_sendto($this->mainSocket, $data, 0);
+        $package = $this->protocols->encode($data);
+        $len = stream_socket_sendto($this->mainSocket, $package, 0);
         fprintf(STDOUT, "send msg len=%d\n", $len);
     }
 

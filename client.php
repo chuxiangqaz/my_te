@@ -12,8 +12,8 @@ $client->on(EVENT_CONNECT, function (Client $client) {
     $client->write("hello word");
 });
 
-$client->on(EVENT_RECEIVE, function (Client $client, $data) {
-    fprintf(STDOUT, "接收到服务端发送的数据data=%s,len=%d\r\n", $data, strlen($data));
+$client->on(EVENT_RECEIVE, function (Client $client, $header, $cmd, $load) {
+    fprintf(STDOUT, "接收到服务端发送的数据header=%d,cmd=%s, load=%s\r\n", $header, $cmd, $load);
 });
 
 

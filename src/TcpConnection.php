@@ -2,6 +2,8 @@
 
 namespace Te;
 
+use Te\Protocols\Protocols;
+
 class TcpConnection
 {
 
@@ -60,12 +62,18 @@ class TcpConnection
      */
     private $readBufferSize = 1024;
 
+    /**
+     * @var Protocols
+     */
+    private $protocols;
 
-    public function __construct($fd, $address, $server)
+
+    public function __construct($fd, $address, $server, Protocols $protocols)
     {
         $this->fd = $fd;
         $this->address = $address;
         $this->server = $server;
+        $this->protocols = $protocols;
     }
 
     /**
@@ -87,9 +95,18 @@ class TcpConnection
             $this->recvLen += strlen($data);
             $this->bufferData .= $data;
 
+            // 判断数据是否完整
+            if (!$this->protocols->integrity($this->bufferData)) {
+                return;
+            }
+
+            // 解码数据
+            [$header, $cmd, $load] = $this->protocols->decode($this->bufferData);
+            $this->bufferData = substr($this->bufferData, $header);
+
 
             // 接受客户端数据
-            $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $data);
+            $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $header, $cmd, $load);
         } else {
             $this->recvBufferFull++;
         }
@@ -103,7 +120,8 @@ class TcpConnection
      */
     public function write($data)
     {
-        $len = stream_socket_sendto($this->fd, $data, 0);
+        $package = $this->protocols->encode($data);
+        $len = stream_socket_sendto($this->fd, $package, 0);
         fprintf(STDOUT, "send msg len=%d\n", $len);
     }
 

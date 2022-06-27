@@ -2,6 +2,8 @@
 
 namespace Te;
 
+use Te\Protocols\Protocols;
+
 class Server
 {
     /**
@@ -29,11 +31,17 @@ class Server
     private $event;
 
     /**
+     * @var Protocols
+     */
+    private $protocols;
+
+    /**
      * @throws \Exception
      */
-    public function __construct($address)
+    public function __construct($address, Protocols $protocols)
     {
         $this->address = $address;
+        $this->protocols = $protocols;
     }
 
     public function on(string $eventName, \Closure $fu)
@@ -140,7 +148,7 @@ class Server
             record(RECORD_ERR, "access is not resource");
             return;
         }
-        $connection = new TcpConnection($fd, $address, $this);
+        $connection = new TcpConnection($fd, $address, $this, $this->protocols);
         if (isset($this->event[EVENT_CONNECT])) {
             $this->runEvent(EVENT_CONNECT, $this, $connection);
         }
