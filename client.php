@@ -9,7 +9,9 @@ $client = new Te\Client("tcp://127.0.0.1:12345", new Stream());
 
 $client->on(EVENT_CONNECT, function (Client $client) {
     fprintf(STDOUT, "成功连接上服务端\r\n");
-    $client->write("hello word");
+    $client->write("hello word1");
+    $client->write("hello word2");
+    $client->write("hello word3");
 });
 
 $client->on(EVENT_RECEIVE, function (Client $client, $header, $cmd, $load) {

@@ -151,16 +151,19 @@ class Client
             $this->bufferData .= $data;
 
             // 判断数据是否完整
-            if (!$this->protocols->integrity($this->bufferData)) {
-                return;
+            while (1) {
+                if (!$this->protocols->integrity($this->bufferData)) {
+                    return;
+                }
+
+                // 解码数据
+                [$header, $cmd, $load] = $this->protocols->decode($this->bufferData);
+                $this->bufferData = substr($this->bufferData, $header);
+
+                // 接受客户端数据
+                $this->runEvent(EVENT_RECEIVE, $this, $header, $cmd, $load);
             }
 
-            // 解码数据
-            [$header, $cmd, $load] = $this->protocols->decode($this->bufferData);
-            $this->bufferData = substr($this->bufferData, $header);
-
-            // 接受客户端数据
-            $this->runEvent(EVENT_RECEIVE, $this, $header, $cmd, $load);
         } else {
             $this->recvBufferFull++;
         }

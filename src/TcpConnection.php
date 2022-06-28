@@ -95,18 +95,20 @@ class TcpConnection
             $this->recvLen += strlen($data);
             $this->bufferData .= $data;
 
-            // 判断数据是否完整
-            if (!$this->protocols->integrity($this->bufferData)) {
-                return;
+            while (1) {
+                // 判断数据是否完整
+                if (!$this->protocols->integrity($this->bufferData)) {
+                    return;
+                }
+
+                // 解码数据
+                [$header, $cmd, $load] = $this->protocols->decode($this->bufferData);
+                $this->bufferData = substr($this->bufferData, $header);
+
+
+                // 接受客户端数据
+                $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $header, $cmd, $load);
             }
-
-            // 解码数据
-            [$header, $cmd, $load] = $this->protocols->decode($this->bufferData);
-            $this->bufferData = substr($this->bufferData, $header);
-
-
-            // 接受客户端数据
-            $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $header, $cmd, $load);
         } else {
             $this->recvBufferFull++;
         }
