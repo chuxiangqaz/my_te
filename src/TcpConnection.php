@@ -42,7 +42,7 @@ class TcpConnection
     private $recvLen = 0;
 
     /**
-     * 表示当前连接接受的字节数大小
+     * 表示当前连接缓冲区已满次数
      *
      * @var int
      */
@@ -95,22 +95,20 @@ class TcpConnection
             $this->recvLen += strlen($data);
             $this->bufferData .= $data;
 
-            while (1) {
-                // 判断数据是否完整
-                if (!$this->protocols->integrity($this->bufferData)) {
-                    return;
-                }
-
-                // 解码数据
-                [$header, $cmd, $load] = $this->protocols->decode($this->bufferData);
-                $this->bufferData = substr($this->bufferData, $header);
-
-
-                // 接受客户端数据
-                $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $header, $cmd, $load);
-            }
         } else {
             $this->recvBufferFull++;
+        }
+
+        // 判断数据是否完整
+        while ($this->protocols->integrity($this->bufferData)) {
+
+            // 解码数据
+            [$header, $cmd, $load] = $this->protocols->decode($this->bufferData);
+            $this->bufferData = substr($this->bufferData, $header);
+            $this->recvLen -=$header;
+
+            // 接受客户端数据
+            $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $header, $cmd, $load);
         }
     }
 
