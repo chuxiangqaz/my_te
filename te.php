@@ -16,7 +16,7 @@ $server->on(EVENT_CONNECT, function (Server $server, TcpConnection $connection) 
 
 $server->on(EVENT_RECEIVE, function (Server $server, TcpConnection $connection, $header, $cmd, $load) {
     fprintf(STDOUT, "recvmsg: [%s]header=%d,cmd=%d, load=%s\r\n", $connection->getAddress(), $header, $cmd, $load);
-    $connection->write($load);
+    $connection->send($load);
 });
 
 $server->on(EVENT_CLOSE, function (Server $server, TcpConnection $connection) {
