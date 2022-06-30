@@ -42,10 +42,21 @@ class Stream implements Protocols
         $headerData = $arrayLen['len'];
         $cmd = unpack("ncmd", substr($data,4,2));
         $cmdData = $cmd['cmd'];
-
-        $load = substr($data, 6, $headerData);
-
+        $load = substr($data, 6);
 
         return [$headerData, $cmdData, $load];
+    }
+
+
+    /**
+     * 获取消息长度
+     * @param string $data
+     * @return int
+     */
+    public function msgLen($data = ''): int
+    {
+        $header = substr($data,0,4);
+        $arrayLen = unpack("Nlen", $header);
+        return $arrayLen['len'];
     }
 }

@@ -102,8 +102,11 @@ class TcpConnection
         // 判断数据是否完整
         while ($this->protocols->integrity($this->bufferData)) {
 
+            // 获取消息长度
+            $msgLen = $this->protocols->msgLen($this->bufferData);
+            $msg = substr($this->bufferData,0, $msgLen);
             // 解码数据
-            [$header, $cmd, $load] = $this->protocols->decode($this->bufferData);
+            [$header, $cmd, $load] = $this->protocols->decode($msg);
             $this->bufferData = substr($this->bufferData, $header);
             $this->recvLen -=$header;
 

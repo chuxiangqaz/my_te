@@ -21,10 +21,18 @@ interface Protocols
     public function encode($data = '');
 
     /**
-     * 解码数据
+     * 解码单条消息
      *
      * @param string $data
      * @return array
      */
     public function decode($data = ''): array;
+
+    /**
+     * 获取一条消息总长度
+     *
+     * @param string $data
+     * @return int
+     */
+    public function msgLen($data = '') :int;
 }
