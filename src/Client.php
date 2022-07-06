@@ -67,6 +67,34 @@ class Client
      */
     private $protocols;
 
+    /**
+     * 表示当前连接的发送缓冲区长度
+     *
+     * @var int
+     */
+    private $sendLen = 0;
+
+    /**
+     * 表示当前连接的发送缓冲区数据
+     *
+     * @var string
+     */
+    private $sendBuffer = '';
+
+    /**
+     * 表示发送缓冲区
+     *
+     * @var int
+     */
+    private $sendBufferSize = 1024 * 100;
+
+    /**
+     * 发送缓冲区满的次数
+     *
+     * @var int
+     */
+    private $sendBufferFull = 0;
+
 
     public function __construct($address, Protocols $protocols)
     {
@@ -181,6 +209,37 @@ class Client
         $package = $this->protocols->encode($data);
         $len = stream_socket_sendto($this->mainSocket, $package, 0);
         fprintf(STDOUT, "send msg len=%d\n", $len);
+    }
+
+    /**
+     * 使用缓冲区发送
+     *
+     * @param $data
+     */
+    public function send($data)
+    {
+        $package = $this->protocols->encode($data);
+
+        if ($this->sendLen + strlen($package) < $this->sendBufferSize) {
+            $this->sendLen += strlen($package);
+            $this->sendBuffer .= $package;
+        } else {
+            $this->sendBufferFull++;
+        }
+
+        // 1. 发送长度等于缓冲区长度  2. 发送长度 < 缓冲区长度  3. 对端关闭
+        $sendLen = fwrite($this->mainSocket, $this->sendBuffer, $this->sendLen);
+        fprintf(STDOUT, "send msg len=%d\n", $sendLen);
+        if ($sendLen === $this->sendLen) {
+            $this->sendBuffer = '';
+            $this->sendLen = 0;
+        } elseif ($sendLen > 0) {
+            $this->sendBuffer .= substr($this->sendBuffer, $sendLen);
+            $this->sendLen -= $sendLen;
+        } else {
+            // 对端关闭
+            $this->runEvent(EVENT_CLOSE, $this);
+        }
     }
 
     public function runEvent($eventName, ...$args)
