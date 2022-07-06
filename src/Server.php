@@ -38,7 +38,7 @@ class Server
     /**
      * @throws \Exception
      */
-    public function __construct($address, Protocols $protocols)
+    public function __construct($address, ?Protocols $protocols)
     {
         $this->address = $address;
         $this->protocols = $protocols;

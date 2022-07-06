@@ -97,7 +97,7 @@ class TcpConnection
     private $protocols;
 
 
-    public function __construct($fd, $address, $server, Protocols $protocols)
+    public function __construct($fd, $address, $server, ?Protocols $protocols)
     {
         $this->fd = $fd;
         $this->address = $address;
@@ -128,25 +128,37 @@ class TcpConnection
             $this->recvBufferFull++;
         }
 
-        // 判断数据是否完整
-        while ($this->protocols->integrity($this->bufferData)) {
-
-            // 获取消息长度
-            $msgLen = $this->protocols->msgLen($this->bufferData);
-            $msg = substr($this->bufferData,0, $msgLen);
-            // 解码数据
-            [$header, $cmd, $load] = $this->protocols->decode($msg);
-            $this->bufferData = substr($this->bufferData, $header);
-            $this->recvLen -=$header;
-
+        if (is_null($this->protocols)) {
+            // 没有协议的TCP数据
+            $load = $this->bufferData;
+            $header = 0;
+            $cmd = 0;
+            $this->bufferData = '';
+            $this->recvLen = 0;
             // 接受客户端数据
             $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $header, $cmd, $load);
+        } else {
+            // 判断数据是否完整
+            while ($this->protocols->integrity($this->bufferData)) {
+
+                // 获取消息长度
+                $msgLen = $this->protocols->msgLen($this->bufferData);
+                $msg = substr($this->bufferData,0, $msgLen);
+                // 解码数据
+                [$header, $cmd, $load] = $this->protocols->decode($msg);
+                $this->bufferData = substr($this->bufferData, $header);
+                $this->recvLen -=$header;
+
+                // 接受客户端数据
+                $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $header, $cmd, $load);
+            }
         }
+
     }
 
     public function send($data)
     {
-        $package = $this->protocols->encode($data);
+        $package = is_null($this->protocols) ? $data : $this->protocols->encode($data);
 
         if ($this->sendLen + strlen($package) < $this->sendBufferSize) {
             $this->sendLen += strlen($package);
