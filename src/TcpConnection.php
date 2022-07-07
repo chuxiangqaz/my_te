@@ -128,12 +128,19 @@ class TcpConnection
             $this->recvBufferFull++;
         }
 
+        $this->handleMessage();
+
+    }
+
+    private function handleMessage()
+    {
         if (is_null($this->protocols)) {
             // 没有协议的TCP数据
             // 接受客户端数据
             $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $this->recvLen, $this->bufferData);
             $this->bufferData = '';
             $this->recvLen = 0;
+            $this->recvBufferFull = 0;
         } else {
             // 判断数据是否完整
             while ($this->protocols->integrity($this->bufferData)) {
@@ -150,7 +157,6 @@ class TcpConnection
                 $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $header, $load);
             }
         }
-
     }
 
     public function send($data)
