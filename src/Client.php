@@ -95,6 +95,17 @@ class Client
      */
     private $sendBufferFull = 0;
 
+    /**
+     * 初始状态
+     *
+     * @var int
+     */
+    private $status = 0;
+
+
+    const STATUS_ESTABLISHED = 9;
+    const STATUS_CLOSE = 10;
+
 
     public function __construct($address, Protocols $protocols)
     {
@@ -112,6 +123,26 @@ class Client
     public function on(string $eventName, \Closure $fu)
     {
         $this->event[$eventName] = $fu;
+    }
+
+    /**
+     * 关闭
+     */
+    public function onClose()
+    {
+        $this->status = self::STATUS_CLOSE;
+        $this->mainSocket = null;
+        $this->runEvent(EVENT_CLOSE, $this);
+    }
+
+    /**
+     * 判断是否是有效的连接
+     *
+     * @return bool
+     */
+    private function validConnect(): bool
+    {
+        return $this->status == self::STATUS_ESTABLISHED && is_resource($this->mainSocket);
     }
 
     public function connect()
@@ -136,8 +167,10 @@ class Client
         }
 
         $this->mainSocket = $socket;
+        $this->status = self::STATUS_ESTABLISHED;
         $this->runEvent(EVENT_CONNECT, $this);
     }
+
 
     /**
      * 进入事件循环
@@ -145,6 +178,10 @@ class Client
     public function eventLoop()
     {
         while (1) {
+            if (!$this->validConnect()) {
+                break;
+            }
+
             $read = [$this->mainSocket];
             $write = [];
             $except = [];
@@ -153,8 +190,8 @@ class Client
                 err("stream_select err");
             }
 
-            if ($read && $this->recv() === false) {
-                break;
+            if ($read) {
+                $this->recv();
             }
         }
     }
@@ -170,9 +207,9 @@ class Client
             if ($data === "" || $data === false) {
                 if (feof($this->mainSocket) || !is_resource($this->mainSocket)) {
                     // 服务端关闭
-                    $this->runEvent(EVENT_CLOSE, $this);
+                    $this->onClose();
+                    return;
                 }
-                return false;
             }
 
             $this->recvLen += strlen($data);
@@ -238,7 +275,7 @@ class Client
             $this->sendLen -= $sendLen;
         } else {
             // 对端关闭
-            $this->runEvent(EVENT_CLOSE, $this);
+            $this->onClose();
         }
     }
 
