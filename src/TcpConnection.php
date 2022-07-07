@@ -130,13 +130,10 @@ class TcpConnection
 
         if (is_null($this->protocols)) {
             // 没有协议的TCP数据
-            $load = $this->bufferData;
-            $header = 0;
-            $cmd = 0;
+            // 接受客户端数据
+            $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $this->recvLen, $this->bufferData);
             $this->bufferData = '';
             $this->recvLen = 0;
-            // 接受客户端数据
-            $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $header, $cmd, $load);
         } else {
             // 判断数据是否完整
             while ($this->protocols->integrity($this->bufferData)) {
@@ -150,7 +147,7 @@ class TcpConnection
                 $this->recvLen -=$header;
 
                 // 接受客户端数据
-                $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $header, $cmd, $load);
+                $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $header, $load);
             }
         }
 

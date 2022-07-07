@@ -187,14 +187,14 @@ class Client
 
             // 获取消息长度
             $msgLen = $this->protocols->msgLen($this->bufferData);
-            $msg = substr($this->bufferData,0, $msgLen);
+            $msg = substr($this->bufferData, 0, $msgLen);
             // 解码数据
             [$header, $cmd, $load] = $this->protocols->decode($msg);
             $this->bufferData = substr($this->bufferData, $header);
-            $this->recvLen -=$header;
+            $this->recvLen -= $header;
 
             // 接受客户端数据
-            $this->runEvent(EVENT_RECEIVE, $this, $header, $cmd, $load);
+            $this->runEvent(EVENT_RECEIVE, $this, $header, $load);
         }
     }
 
