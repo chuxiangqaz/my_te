@@ -132,6 +132,9 @@ class TcpConnection
 
     }
 
+    /**
+     * 处理消息内容
+     */
     private function handleMessage()
     {
         if (is_null($this->protocols)) {
