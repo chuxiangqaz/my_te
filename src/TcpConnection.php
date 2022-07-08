@@ -112,6 +112,7 @@ class TcpConnection
     {
         if ($this->recvLen < $this->recvBufferSize) {
             $data = fread($this->fd, $this->readBufferSize);
+            $this->server->onRecve($this);
             if ($data === "" || $data === false) {
                 if (feof($this->fd) || !is_resource($this->fd)) {
                     // 客户端关闭
@@ -140,7 +141,7 @@ class TcpConnection
         if (is_null($this->protocols)) {
             // 没有协议的TCP数据
             // 接受客户端数据
-            $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $this->recvLen, $this->bufferData);
+            $this->server->onRecvMsg($this, $this->recvLen, $this->bufferData);
             $this->bufferData = '';
             $this->recvLen = 0;
             $this->recvBufferFull = 0;
@@ -157,7 +158,7 @@ class TcpConnection
                 $this->recvLen -=$header;
 
                 // 接受客户端数据
-                $this->server->runEvent(EVENT_RECEIVE, $this->server, $this, $header, $load);
+                $this->server->onRecvMsg($this, $header, $load);
             }
         }
     }
@@ -175,7 +176,7 @@ class TcpConnection
 
         // 1. 发送长度等于缓冲区长度  2. 发送长度 < 缓冲区长度  3. 对端关闭
         $sendLen = fwrite($this->fd, $this->sendBuffer, $this->sendLen);
-        fprintf(STDOUT, "send msg len=%d\n", $sendLen);
+        //fprintf(STDOUT, "send msg len=%d\n", $sendLen);
         if ($sendLen === $this->sendLen) {
             $this->sendBuffer = '';
             $this->sendLen = 0;

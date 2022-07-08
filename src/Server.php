@@ -36,17 +36,109 @@ class Server
     private $protocols;
 
     /**
+     * 客户端数量
+     *
+     * @var int
+     */
+    private $clientNum = 0;
+
+
+    /**
+     * 调用 recv 函数的次数
+     *
+     * @var int
+     */
+    private $recvNum = 0;
+
+    /**
+     * 接受消息的数量
+     *
+     * @var int
+     */
+    private $msgNum = 0;
+
+
+    /**
+     * 统计时间
+     *
+     * @var int
+     */
+    private $statisticsTime = 0;
+
+    /**
      * @throws \Exception
      */
     public function __construct($address, ?Protocols $protocols)
     {
         $this->address = $address;
         $this->protocols = $protocols;
+        $this->statisticsTime = time();
     }
 
     public function on(string $eventName, \Closure $fu)
     {
         $this->event[$eventName] = $fu;
+    }
+
+    /**
+     * 加入客户端
+     *
+     * @param TcpConnection $connection
+     */
+    public function onJoin(TcpConnection $connection)
+    {
+        $this->clientNum++;
+        if (isset($this->event[EVENT_CONNECT])) {
+            $this->runEvent(EVENT_CONNECT, $this, $connection);
+        }
+    }
+
+    /**
+     * 接受到消息
+     * @param TcpConnection $connection
+     */
+    public function onRecve(TcpConnection $connection)
+    {
+        $this->recvNum++;
+    }
+
+    /**
+     * 接收到数据包文
+     *
+     * @param TcpConnection $connection
+     * @param int $msgLen
+     * @param string $msg
+     */
+    public function onRecvMsg(TcpConnection $connection, int $msgLen, string $msg)
+    {
+        $this->msgNum++;
+        $this->runEvent(EVENT_RECEIVE, $this, $connection, $msgLen, $msg);
+    }
+
+    /**
+     * 客户端关闭
+     *
+     * @param $fd
+     * @return void
+     */
+    public function closeClient($fd)
+    {
+        $this->runEvent(EVENT_CLOSE, $this, self::$connection[(int)$fd]);
+        unset(self::$connection[(int)$fd]);
+        @fclose($fd);
+        $this->clientNum--;
+    }
+
+    public function statistics()
+    {
+        $now = time();
+        if (($sub = $now - $this->statisticsTime) < 1) {
+            return;
+        }
+        fprintf(STDOUT, "time=%d---接收到客户端:%d---fread=%s---revcmsg=%s\r\n", $sub, $this->clientNum, $this->recvNum /1000 .'K', $this->msgNum/ 1000 .'K');
+        $this->recvNum = 0;
+        $this->msgNum = 0;
+        $this->statisticsTime = $now;
     }
 
     public function start()
@@ -85,6 +177,7 @@ class Server
     public function eventLoop()
     {
         while (1) {
+            $this->statistics();
             $read = [];
             $read[] = $this->mainSocket;
             foreach (self::$connection as $connect) {
@@ -149,23 +242,9 @@ class Server
             return;
         }
         $connection = new TcpConnection($fd, $address, $this, $this->protocols);
-        if (isset($this->event[EVENT_CONNECT])) {
-            $this->runEvent(EVENT_CONNECT, $this, $connection);
-        }
-
         self::$connection[(int)$fd] = $connection;
+        $this->onJoin($connection);
     }
 
-    /**
-     * 客户端关闭
-     *
-     * @param $fd
-     * @return void
-     */
-    public function closeClient($fd)
-    {
-        $this->runEvent(EVENT_CLOSE, $this, self::$connection[(int)$fd]);
-        unset(self::$connection[(int)$fd]);
-        @fclose($fd);
-    }
+
 }
