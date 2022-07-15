@@ -162,8 +162,13 @@ class Server
                 err("not support $protocol server");
         }
 
+        // 设置套接字半连接队列大小
+        $options['socket']['backlog'] = 1000;
+
+        $context = stream_context_create($options);
+
         // socket, bind, listen
-        $socket = stream_socket_server($this->address, $errCode, $errMsg, $flag);
+        $socket = stream_socket_server($this->address, $errCode, $errMsg, $flag, $context);
         if (!is_resource($socket)) {
             err("create server err" . $errMsg, $errCode);
         }

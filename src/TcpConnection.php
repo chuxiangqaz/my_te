@@ -127,6 +127,7 @@ class TcpConnection
 
         } else {
             $this->recvBufferFull++;
+            $this->server->on(EVENT_BUFFER_FULL, $this->server, $this);
         }
 
         $this->handleMessage();

@@ -23,6 +23,10 @@ $server->on(EVENT_CLOSE, function (Server $server, TcpConnection $connection) {
     fprintf(STDOUT, "客户端关闭了%s " . PHP_EOL, $connection->getAddress());
 });
 
+$server->on(EVENT_BUFFER_FULL, function (Server $server, TcpConnection $connection) {
+    fprintf(STDOUT, "接受缓冲区满了");
+});
+
 
 $server->start();
 

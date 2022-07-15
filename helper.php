@@ -8,7 +8,7 @@ const RECORD_DEBUG = 'debug';
 const EVENT_CONNECT = 'connect';
 const EVENT_RECEIVE = 'receive';
 const EVENT_CLOSE = 'close';
-
+const EVENT_BUFFER_FULL = 'buffer_full';
 
 function err($errMsg, $errCode = -1)
 {
