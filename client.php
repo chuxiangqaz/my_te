@@ -27,6 +27,7 @@ $client->on(EVENT_CLOSE, function (Client $client) {
 $client->start();
 
 while (1) {
+    $client->statistics();
     if ($client->send("hello,i am client") === false) {
         break;
     }

@@ -102,6 +102,36 @@ class Client
      */
     private $status = 0;
 
+    /**
+     * 客户端数量
+     *
+     * @var int
+     */
+    private $clientNum = 0;
+
+
+    /**
+     * 调用 write 函数的次数
+     *
+     * @var int
+     */
+    private $writeNum = 0;
+
+    /**
+     * 发送消息的数量
+     *
+     * @var int
+     */
+    private $msgNum = 0;
+
+
+    /**
+     * 统计时间
+     *
+     * @var int
+     */
+    private $statisticsTime = 0;
+
 
     const STATUS_ESTABLISHED = 9;
     const STATUS_CLOSE = 10;
@@ -111,6 +141,7 @@ class Client
     {
         $this->address = $address;
         $this->protocols = $protocols;
+        $this->statisticsTime = time();
     }
 
     public function start()
@@ -123,6 +154,19 @@ class Client
     public function on(string $eventName, \Closure $fu)
     {
         $this->event[$eventName] = $fu;
+    }
+
+
+    public function statistics()
+    {
+        $now = time();
+        if (($sub = $now - $this->statisticsTime) < 1) {
+            return;
+        }
+        fprintf(STDOUT, "time=%d----socket=%d---fwrite=%s---sendMsg=%s\r\n", $sub, (int)$this->mainSocket, $this->writeNum /1000 .'K', $this->msgNum/ 1000 .'K');
+        $this->writeNum = 0;
+        $this->msgNum = 0;
+        $this->statisticsTime = $now;
     }
 
     /**
@@ -259,7 +303,7 @@ class Client
     public function send($data)
     {
         $package = $this->protocols->encode($data);
-
+        $this->msgNum++;
         if ($this->sendLen + strlen($package) < $this->sendBufferSize) {
             $this->sendLen += strlen($package);
             $this->sendBuffer .= $package;
@@ -272,7 +316,8 @@ class Client
         }
         // 1. 发送长度等于缓冲区长度  2. 发送长度 < 缓冲区长度  3. 对端关闭
         $sendLen = fwrite($this->mainSocket, $this->sendBuffer, $this->sendLen);
-        fprintf(STDOUT, "send msg len=%d\n", $sendLen);
+        //fprintf(STDOUT, "send msg len=%d\n", $sendLen);
+        $this->writeNum++;
         if ($sendLen === $this->sendLen) {
             $this->sendBuffer = '';
             $this->sendLen = 0;
