@@ -116,7 +116,7 @@ class Client
     public function start()
     {
         $this->connect();
-        $this->eventLoop();
+        //$this->eventLoop();
     }
 
 
@@ -177,14 +177,15 @@ class Client
      */
     public function eventLoop()
     {
-        while (1) {
+//        while (1) {
             if (!$this->validConnect()) {
-                break;
+//                break;
+                return false;
             }
 
             $read = [$this->mainSocket];
-            $write = [];
-            $except = [];
+            $write = [$this->mainSocket];
+            $except = [$this->mainSocket];
             $numChange = stream_select($read, $write, $except, null, null);
             if ($numChange === false || $numChange < 0) {
                 err("stream_select err");
@@ -193,7 +194,9 @@ class Client
             if ($read) {
                 $this->recv();
             }
-        }
+
+            return true;
+//        }
     }
 
 
@@ -264,6 +267,9 @@ class Client
             $this->sendBufferFull++;
         }
 
+        if (!$this->validConnect()) {
+            return false;
+        }
         // 1. 发送长度等于缓冲区长度  2. 发送长度 < 缓冲区长度  3. 对端关闭
         $sendLen = fwrite($this->mainSocket, $this->sendBuffer, $this->sendLen);
         fprintf(STDOUT, "send msg len=%d\n", $sendLen);
