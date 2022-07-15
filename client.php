@@ -4,6 +4,15 @@ use Te\Client;
 use Te\Protocols\Stream;
 
 require "./vendor/autoload.php";
+/*
+
+当超过1024个客户端的时候就会报错
+PHP Warning:  stream_select(): You MUST recompile PHP with a larger value of FD_SETSIZE.
+It is set to 1024, but you have descriptors numbered at least as high as 1024.
+--enable-fd-setsize=2048 is recommended, but you may want to set it
+to equal the maximum number of open files supported by your system,
+in order to avoid seeing this error again at a later date. in /data/my_te/src/Client.php on line 233
+*/
 
 $clientNum = $argv[1] ?? 1;
 
@@ -33,13 +42,19 @@ for ($i = 0; $i < $clientNum; $i++) {
 }
 
 while (1) {
-    foreach ($clients as $client) {
+    if (empty($clients)) {
+        break;
+    }
+
+    foreach ($clients as $i => $client) {
         $client->statistics();
         if ($client->send("hello,i am client") === false) {
+            unset($clients[$i]);
             break;
         }
 
         if (!$client->eventLoop()) {
+            unset($clients[$i]);
             break;
         }
     }
