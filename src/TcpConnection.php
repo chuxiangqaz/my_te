@@ -164,6 +164,11 @@ class TcpConnection
         }
     }
 
+    /**
+     * 发送到缓冲区
+     *
+     * @param $data
+     */
     public function send($data)
     {
         $package = is_null($this->protocols) ? $data : $this->protocols->encode($data);
@@ -173,6 +178,27 @@ class TcpConnection
             $this->sendBuffer .= $package;
         } else {
             $this->sendBufferFull++;
+        }
+    }
+
+    /**
+     * 是否能发送
+     *
+     * @return bool
+     */
+    private function needWrite() :bool
+    {
+        return $this->sendLen > 0;
+    }
+
+
+    /**
+     * 发送缓冲区内容
+     */
+    public function write2socket(): void
+    {
+        if (!$this->needWrite()) {
+            return;
         }
 
         // 1. 发送长度等于缓冲区长度  2. 发送长度 < 缓冲区长度  3. 对端关闭
@@ -218,6 +244,8 @@ class TcpConnection
     {
         return $this->fd;
     }
+
+
 
 
 }

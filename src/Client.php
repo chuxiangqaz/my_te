@@ -240,6 +240,7 @@ class Client
             }
 
             if ($write) {
+                var_dump('write');
                 $this->write2socket();
             }
 
@@ -317,6 +318,7 @@ class Client
             $this->sendBuffer .= $package;
         } else {
             $this->sendBufferFull++;
+            $this->runEvent(EVENT_BUFFER_FULL, $this);
         }
     }
 
@@ -329,6 +331,13 @@ class Client
         if (!$this->needWrite()) {
             return;
         }
+
+        if (!is_resource($this->mainSocket)) {
+            // 对端关闭
+            $this->onClose();
+            return;
+        }
+
 
         // 1. 发送长度等于缓冲区长度  2. 发送长度 < 缓冲区长度  3. 对端关闭
         $sendLen = fwrite($this->mainSocket, $this->sendBuffer, $this->sendLen);

@@ -185,11 +185,12 @@ class Server
             $this->statistics();
             $read = [];
             $read[] = $this->mainSocket;
-            foreach (self::$connection as $connect) {
-                $read[] = $connect->getFd();
-            }
             $write = [];
             $except = [];
+            foreach (self::$connection as $connect) {
+                $read[] = $connect->getFd();
+                $write[] = $connect->getFd();
+            }
 
             /**
              * 可读情况：
@@ -224,6 +225,16 @@ class Server
                         // 连接 socket
                         self::$connection[(int)$fd]->recv();
                     }
+                }
+            }
+
+            if ($write) {
+                foreach ($write as $fd) {
+                        if (isset(self::$connection[(int)$fd])) {
+                            // 连接 socket
+                            self::$connection[(int)$fd]->write2socket();
+                        }
+
                 }
             }
         }

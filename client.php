@@ -27,8 +27,12 @@ for ($i = 0; $i < $clientNum; $i++) {
     });
 
     $client->on(EVENT_RECEIVE, function (Client $client, $len, $message) {
-        //fprintf(STDOUT, "接收到服务端发送的数据len=%d,message=%s\r\n", $len, $message);
+        fprintf(STDOUT, "接收到服务端发送的数据len=%d,message=%s\r\n", $len, $message);
         //$client->send("i am client");
+    });
+
+    $client->on(EVENT_BUFFER_FULL, function (Client $client) {
+        fprintf(STDOUT, "发送缓冲区满了\r\n");
     });
 
 
@@ -47,7 +51,7 @@ while (1) {
     }
 
     foreach ($clients as $i => $client) {
-        $client->statistics();
+        // $client->statistics();
         for ($j = 0; $j < 3; $j++) {
             if ($client->send("hello,i am client") === false) {
                 unset($clients[$i]);
