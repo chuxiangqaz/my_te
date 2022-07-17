@@ -115,14 +115,14 @@ class Client
      *
      * @var int
      */
-    private $writeNum = 0;
+    public $writeNum = 0;
 
     /**
      * 发送消息的数量
      *
      * @var int
      */
-    private $msgNum = 0;
+    public $msgNum = 0;
 
 
     /**
@@ -157,17 +157,17 @@ class Client
     }
 
 
-    public function statistics()
-    {
-        $now = time();
-        if (($sub = $now - $this->statisticsTime) < 1) {
-            return;
-        }
-        fprintf(STDOUT, "time=%d----socket=%d---fwrite=%s---sendMsg=%s\r\n", $sub, (int)$this->mainSocket, $this->writeNum /1000 .'K', $this->msgNum/ 1000 .'K');
-        $this->writeNum = 0;
-        $this->msgNum = 0;
-        $this->statisticsTime = $now;
-    }
+//    public function statistics()
+//    {
+//        $now = time();
+//        if (($sub = $now - $this->statisticsTime) < 1) {
+//            return;
+//        }
+//        fprintf(STDOUT, "time=%d----socket=%d---fwrite=%s---sendMsg=%s\r\n", $sub, (int)$this->mainSocket, $this->writeNum /1000 .'K', $this->msgNum/ 1000 .'K');
+//        $this->writeNum = 0;
+//        $this->msgNum = 0;
+//        $this->statisticsTime = $now;
+//    }
 
     /**
      * 关闭
@@ -240,7 +240,6 @@ class Client
             }
 
             if ($write) {
-                var_dump('write');
                 $this->write2socket();
             }
 
