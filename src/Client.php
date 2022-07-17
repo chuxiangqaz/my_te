@@ -239,6 +239,10 @@ class Client
                 $this->recv();
             }
 
+            if ($write) {
+                $this->write2socket();
+            }
+
             return true;
 //        }
     }
@@ -302,6 +306,10 @@ class Client
      */
     public function send($data)
     {
+        if (!$this->validConnect()) {
+            return false;
+        }
+
         $package = $this->protocols->encode($data);
         $this->msgNum++;
         if ($this->sendLen + strlen($package) < $this->sendBufferSize) {
@@ -310,10 +318,18 @@ class Client
         } else {
             $this->sendBufferFull++;
         }
+    }
 
-        if (!$this->validConnect()) {
-            return false;
+
+    /**
+     * 发送缓冲区内容
+     */
+    private function write2socket(): void
+    {
+        if (!$this->needWrite()) {
+            return;
         }
+
         // 1. 发送长度等于缓冲区长度  2. 发送长度 < 缓冲区长度  3. 对端关闭
         $sendLen = fwrite($this->mainSocket, $this->sendBuffer, $this->sendLen);
         //fprintf(STDOUT, "send msg len=%d\n", $sendLen);
@@ -328,6 +344,16 @@ class Client
             // 对端关闭
             $this->onClose();
         }
+    }
+
+    /**
+     * 判断是否需要发送
+     *
+     * @return bool
+     */
+    public function needWrite() :bool
+    {
+        return $this->sendLen > 0;
     }
 
     public function runEvent($eventName, ...$args)
