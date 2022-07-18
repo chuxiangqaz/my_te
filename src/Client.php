@@ -137,7 +137,7 @@ class Client
     const STATUS_CLOSE = 10;
 
 
-    public function __construct($address, Protocols $protocols)
+    public function __construct($address, ?Protocols $protocols)
     {
         $this->address = $address;
         $this->protocols = $protocols;

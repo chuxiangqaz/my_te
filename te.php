@@ -16,7 +16,7 @@ $server->on(EVENT_CONNECT, function (Server $server, TcpConnection $connection) 
 
 $server->on(EVENT_RECEIVE, function (Server $server, TcpConnection $connection, $len, $message) {
    // fprintf(STDOUT, "recvmsg: [%s]len=%d,message=%s\r\n", $connection->getAddress(), $len, $message);
-    //$connection->send("i am server!". microtime());
+    $connection->send("i am server!". microtime());
 });
 
 $server->on(EVENT_CLOSE, function (Server $server, TcpConnection $connection) {

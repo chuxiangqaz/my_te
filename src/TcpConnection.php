@@ -96,6 +96,13 @@ class TcpConnection
      */
     private $protocols;
 
+    /**
+     * 心跳时间
+     *
+     * @var int
+     */
+    public $heatTime = 0;
+
 
     public function __construct($fd, $address, $server, ?Protocols $protocols)
     {
@@ -103,6 +110,7 @@ class TcpConnection
         $this->address = $address;
         $this->server = $server;
         $this->protocols = $protocols;
+        $this->heatTime = time();
     }
 
     /**

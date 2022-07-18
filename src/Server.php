@@ -99,8 +99,10 @@ class Server
      */
     public function onRecve(TcpConnection $connection)
     {
+        $connection->heatTime = time();
         $this->recvNum++;
     }
+
 
     /**
      * 接收到数据包文
@@ -177,12 +179,25 @@ class Server
     }
 
     /**
+     * 心跳检查
+     */
+    public function heartbeat() :void
+    {
+        foreach (self::$connection as $connect) {
+            if (time() - $connect->heatTime > 10) {
+                $this->closeClient($connect->getFd());
+            }
+        }
+    }
+
+    /**
      * 事件循环
      */
     public function eventLoop()
     {
         while (1) {
             $this->statistics();
+            $this->heartbeat();
             $read = [];
             $read[] = $this->mainSocket;
             $write = [];
