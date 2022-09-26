@@ -11,6 +11,12 @@ namespace Te\Protocols;
 class Stream implements Protocols
 {
 
+    /**
+     * 判断数据是否完整
+     *
+     * @param $data
+     * @return bool
+     */
     public function integrity($data): bool
     {
         if (strlen($data) <= 6) {
@@ -24,6 +30,12 @@ class Stream implements Protocols
         return strlen($data) >= $len;
     }
 
+    /**
+     * 编码数据
+     *
+     * @param string $data
+     * @return mixed
+     */
     public function encode($data = '')
     {
         $header = strlen($data) + 6;
@@ -34,6 +46,12 @@ class Stream implements Protocols
 
     }
 
+    /**
+     * 解码单条消息
+     *
+     * @param string $data
+     * @return array
+     */
     public function decode($data = '') :array
     {
 
