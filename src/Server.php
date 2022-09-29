@@ -185,6 +185,7 @@ class Server
     {
         foreach (self::$connection as $connect) {
             if (time() - $connect->heatTime > 10) {
+                fprintf(STDOUT, "[%s]心跳超时\r\n", $connect->getAddress());
                 $this->closeClient($connect->getFd());
             }
         }
