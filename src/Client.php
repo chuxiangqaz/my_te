@@ -374,8 +374,8 @@ class Client
 
 
         // 1. 发送长度等于缓冲区长度  2. 发送长度 < 缓冲区长度  3. 对端关闭
-        $sendLen = fwrite($this->mainSocket, $this->sendBuffer, $this->sendLen);
-        fprintf(STDOUT, "send msg len=%d\n", $sendLen);
+        $sendLen = @fwrite($this->mainSocket, $this->sendBuffer, $this->sendLen);
+        //fprintf(STDOUT, "send msg len=%d\n", $sendLen);
         $this->writeNum++;
         if ($sendLen === $this->sendLen) {
             $this->sendBuffer = '';

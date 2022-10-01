@@ -27,7 +27,7 @@ for ($i = 0; $i < $clientNum; $i++) {
     });
 
     $client->on(EVENT_RECEIVE, function (Client $client, $len, $message) {
-        fprintf(STDOUT, "接收到服务端发送的数据len=%d,message=%s\r\n", $len, $message);
+        //fprintf(STDOUT, "接收到服务端发送的数据len=%d,message=%s\r\n", $len, $message);
         $client->send("i am client");
     });
 
