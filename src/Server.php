@@ -175,6 +175,7 @@ class Server
         }
 
         $this->mainSocket = $socket;
+        stream_set_blocking($this->mainSocket, false);
     }
 
     /**

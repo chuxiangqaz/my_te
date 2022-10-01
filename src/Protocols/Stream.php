@@ -50,9 +50,9 @@ class Stream implements Protocols
      * 解码单条消息
      *
      * @param string $data
-     * @return array
+     * @return string
      */
-    public function decode($data = '') :array
+    public function decode($data = '') :string
     {
 
         $header = substr($data,0,4);

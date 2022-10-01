@@ -289,7 +289,7 @@ class Client
     public function recv()
     {
         if ($this->recvLen < $this->recvBufferSize) {
-            $data = fread($this->mainSocket, $this->readBufferSize);
+            $data = stream_socket_recvfrom($this->mainSocket, $this->readBufferSize);
             if ($data === "" || $data === false) {
                 if (feof($this->mainSocket) || !is_resource($this->mainSocket)) {
                     // 服务端关闭

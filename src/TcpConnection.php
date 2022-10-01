@@ -107,6 +107,9 @@ class TcpConnection
     public function __construct($fd, $address, $server, ?Protocols $protocols)
     {
         $this->fd = $fd;
+        stream_set_blocking($fd, false);
+        stream_set_read_buffer($fd, 0);
+        stream_set_write_buffer($fd, 0);
         $this->address = $address;
         $this->server = $server;
         $this->protocols = $protocols;
@@ -135,7 +138,7 @@ class TcpConnection
 
         } else {
             $this->recvBufferFull++;
-            $this->server->on(EVENT_BUFFER_FULL, $this->server, $this);
+            $this->server->runEvent(EVENT_BUFFER_FULL, $this->server, $this);
         }
 
         $this->handleMessage();
