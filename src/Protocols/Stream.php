@@ -62,7 +62,7 @@ class Stream implements Protocols
         $cmdData = $cmd['cmd'];
         $load = substr($data, 6);
 
-        return [$headerData, $cmdData, $load];
+        return $load;
     }
 
 

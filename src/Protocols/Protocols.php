@@ -23,10 +23,10 @@ interface Protocols
     /**
      * 解码单条消息
      *
-     * @param string $data
-     * @return array
+     * @param string $data 表示单个报文的内容
+     * @return string 返回报文内容
      */
-    public function decode($data = ''): array;
+    public function decode($data = ''): string;
 
     /**
      * 获取一条消息总长度

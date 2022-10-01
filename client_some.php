@@ -40,7 +40,7 @@ for ($i = 0; $i < $clientNum; $i++) {
         fprintf(STDOUT, "服务已经关闭\r\n");
     });
 
-    $client->start();
+    $client->connect();
 
     $clients[] = $client;
 }
@@ -83,7 +83,7 @@ while (1) {
         }
 
 
-        if (!$client->eventLoop()) {
+        if (!$client->ioSelect()) {
             unset($clients[$i]);
             break;
         }

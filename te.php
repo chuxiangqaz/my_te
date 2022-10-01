@@ -1,6 +1,6 @@
 <?php
 
-use Te\Protocols\Stream;
+use Te\Protocols\Text;
 use Te\Server;
 use Te\TcpConnection;
 
@@ -8,15 +8,15 @@ require "./vendor/autoload.php";
 
 echo 'pid=' . getmypid() . PHP_EOL;
 
-$server = new Server("tcp://127.0.0.1:12345", new Stream());
+$server = new Server("tcp://127.0.0.1:12345", new Text());
 
 $server->on(EVENT_CONNECT, function (Server $server, TcpConnection $connection) {
     fprintf(STDOUT, "客户端连接, ip=%s\n", $connection->getAddress());
 });
 
 $server->on(EVENT_RECEIVE, function (Server $server, TcpConnection $connection, $len, $message) {
-    //fprintf(STDOUT, "recvmsg: [%s]len=%d,message=%s\r\n", $connection->getAddress(), $len, $message);
-    $connection->send("i am server!". microtime());
+    fprintf(STDOUT, "recvmsg: [%s]len=%d,message=%s\r\n", $connection->getAddress(), $len, $message);
+    $connection->send("i am server!");
 });
 
 $server->on(EVENT_CLOSE, function (Server $server, TcpConnection $connection) {

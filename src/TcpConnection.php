@@ -162,12 +162,11 @@ class TcpConnection
                 $msgLen = $this->protocols->msgLen($this->bufferData);
                 $msg = substr($this->bufferData,0, $msgLen);
                 // 解码数据
-                [$header, $cmd, $load] = $this->protocols->decode($msg);
-                $this->bufferData = substr($this->bufferData, $header);
-                $this->recvLen -=$header;
-
+                $load = $this->protocols->decode($msg);
+                $this->bufferData = substr($this->bufferData, $msgLen);
+                $this->recvLen -=$msgLen;
                 // 接受客户端数据
-                $this->server->onRecvMsg($this, $header, $load);
+                $this->server->onRecvMsg($this, $msgLen, $load);
             }
         }
     }

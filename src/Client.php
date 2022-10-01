@@ -22,7 +22,7 @@ class Client
      *
      * @var int
      */
-    private $recvBufferSize = 1024 * 100;
+    private $recvBufferSize = 1024 * 1000;
 
 
     /**
@@ -86,7 +86,7 @@ class Client
      *
      * @var int
      */
-    private $sendBufferSize = 1024 * 100;
+    private $sendBufferSize = 1024 * 1000;
 
     /**
      * 发送缓冲区满的次数
@@ -147,7 +147,7 @@ class Client
     public function start()
     {
         $this->connect();
-        //$this->eventLoop();
+        $this->eventLoop();
     }
 
 
@@ -157,17 +157,17 @@ class Client
     }
 
 
-//    public function statistics()
-//    {
-//        $now = time();
-//        if (($sub = $now - $this->statisticsTime) < 1) {
-//            return;
-//        }
-//        fprintf(STDOUT, "time=%d----socket=%d---fwrite=%s---sendMsg=%s\r\n", $sub, (int)$this->mainSocket, $this->writeNum /1000 .'K', $this->msgNum/ 1000 .'K');
-//        $this->writeNum = 0;
-//        $this->msgNum = 0;
-//        $this->statisticsTime = $now;
-//    }
+    public function statistics()
+    {
+        $now = time();
+        if (($sub = $now - $this->statisticsTime) < 1) {
+            return;
+        }
+        fprintf(STDOUT, "time=%d----socket=%d---fwrite=%s---sendMsg=%s\r\n", $sub, (int)$this->mainSocket, $this->writeNum, $this->msgNum);
+        $this->writeNum = 0;
+        $this->msgNum = 0;
+        $this->statisticsTime = $now;
+    }
 
     /**
      * 关闭
@@ -205,7 +205,11 @@ class Client
         }
 
         // socket, connect
-        $socket = stream_socket_client($this->address, $errCode, $errMsg, $flag);
+        $options['socket']['backlog'] = 1000;
+        $options['socket']['tcp_nodelay'] = true;
+
+        $context = stream_context_create($options);
+        $socket = stream_socket_client($this->address, $errCode, $errMsg,null, $flag, $context);
         if (!is_resource($socket)) {
             err("create server err" . $errMsg, $errCode);
         }
@@ -221,12 +225,12 @@ class Client
      */
     public function eventLoop()
     {
-//        while (1) {
+        while (1) {
             if (!$this->validConnect()) {
-//                break;
-                return false;
+                break;
             }
 
+            $this->statistics();
             $read = [$this->mainSocket];
             $write = [$this->mainSocket];
             $except = [$this->mainSocket];
@@ -239,11 +243,42 @@ class Client
                 $this->recv();
             }
 
-            if ($write) {
+            //if ($write) {
                 $this->write2socket();
-            }
+            //}
+        }
+    }
 
-            return true;
+
+
+    /**
+     * 进入事件循环
+     */
+    public function ioSelect()
+    {
+//        while (1) {
+        if (!$this->validConnect()) {
+//                break;
+            return false;
+        }
+
+        $read = [$this->mainSocket];
+        $write = [$this->mainSocket];
+        $except = [$this->mainSocket];
+        $numChange = stream_select($read, $write, $except, null, null);
+        if ($numChange === false || $numChange < 0) {
+            err("stream_select err");
+        }
+
+        if ($read) {
+            $this->recv();
+        }
+
+        if ($write) {
+            $this->write2socket();
+        }
+
+        return true;
 //        }
     }
 
@@ -277,12 +312,12 @@ class Client
             $msgLen = $this->protocols->msgLen($this->bufferData);
             $msg = substr($this->bufferData, 0, $msgLen);
             // 解码数据
-            [$header, $cmd, $load] = $this->protocols->decode($msg);
-            $this->bufferData = substr($this->bufferData, $header);
-            $this->recvLen -= $header;
+            $load = $this->protocols->decode($msg);
+            $this->bufferData = substr($this->bufferData, $msgLen);
+            $this->recvLen -= $msgLen;
 
             // 接受客户端数据
-            $this->runEvent(EVENT_RECEIVE, $this, $header, $load);
+            $this->runEvent(EVENT_RECEIVE, $this, $msgLen, $load);
         }
     }
 
@@ -340,7 +375,7 @@ class Client
 
         // 1. 发送长度等于缓冲区长度  2. 发送长度 < 缓冲区长度  3. 对端关闭
         $sendLen = fwrite($this->mainSocket, $this->sendBuffer, $this->sendLen);
-        //fprintf(STDOUT, "send msg len=%d\n", $sendLen);
+        fprintf(STDOUT, "send msg len=%d\n", $sendLen);
         $this->writeNum++;
         if ($sendLen === $this->sendLen) {
             $this->sendBuffer = '';
