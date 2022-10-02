@@ -75,7 +75,7 @@ class TcpConnection
      *
      * @var int
      */
-    private $sendBufferSize = 1000 * 1000 * 1024;
+    private $sendBufferSize = 1 * 1024 * 1024; //1MB
 
     /**
      * 发送缓冲区满的次数
@@ -218,13 +218,12 @@ class TcpConnection
 
         // 1. 发送长度等于缓冲区长度  2. 发送长度 < 缓冲区长度  3. 对端关闭
         $sendLen = fwrite($this->fd, $this->sendBuffer, $this->sendLen);
-        fprintf(STDOUT, "send msg len=%d\n", $sendLen);
+        //fprintf(STDOUT, "send msg len=%d\n", $sendLen);
         if ($sendLen === $this->sendLen) {
             $this->sendBuffer = '';
             $this->sendLen = 0;
             $this->server->ioEvent->delEvent($this->fd, Event::WRITE_EVENT);
         } elseif ($sendLen > 0) {
-            echo "只发生了一半" . $sendLen;
             $this->sendBuffer .= substr($this->sendBuffer, $sendLen);
             $this->sendLen -= $sendLen;
         } else {

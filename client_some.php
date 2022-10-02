@@ -31,8 +31,12 @@ for ($i = 0; $i < $clientNum; $i++) {
         $client->send("i am client");
     });
 
-    $client->on(EVENT_BUFFER_FULL, function (Client $client) {
+    $client->on(EVENT_WRITE_BUFFER_FULL, function (Client $client) {
         fprintf(STDOUT, "发送缓冲区满了\r\n");
+    });
+
+    $client->on(EVENT_READ_BUFFER_FULL, function (Client $client) {
+        fprintf(STDOUT, "接受缓冲区满了\r\n");
     });
 
 

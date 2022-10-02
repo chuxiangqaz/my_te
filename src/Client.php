@@ -274,9 +274,9 @@ class Client
             $this->recv();
         }
 
-        if ($write) {
+        //if ($write) {
             $this->write2socket();
-        }
+        //}
 
         return true;
 //        }
@@ -303,6 +303,7 @@ class Client
 
         } else {
             $this->recvBufferFull++;
+            $this->runEvent(EVENT_READ_BUFFER_FULL, $this);
         }
 
         // 判断数据是否完整
@@ -352,7 +353,7 @@ class Client
             $this->sendBuffer .= $package;
         } else {
             $this->sendBufferFull++;
-            $this->runEvent(EVENT_BUFFER_FULL, $this);
+            $this->runEvent(EVENT_WRITE_BUFFER_FULL, $this);
         }
     }
 

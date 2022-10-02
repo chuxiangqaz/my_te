@@ -13,14 +13,16 @@ $client->on(EVENT_CONNECT, function (Client $client) {
 
 $client->on(EVENT_RECEIVE, function (Client $client, $len, $message) {
     fprintf(STDOUT, "接收到服务端发送的数据len=%d,message=%s\r\n", $len, $message);
-    sleep(10);
     $client->send("i am client");
 });
 
-$client->on(EVENT_BUFFER_FULL, function (Client $client) {
+$client->on(EVENT_WRITE_BUFFER_FULL, function (Client $client) {
     fprintf(STDOUT, "发送缓冲区满了\r\n");
 });
 
+$client->on(EVENT_READ_BUFFER_FULL, function (Client $client) {
+    fprintf(STDOUT, "接受缓冲区满了\r\n");
+});
 
 $client->on(EVENT_CLOSE, function (Client $client) {
     fprintf(STDOUT, "服务已经关闭\r\n");

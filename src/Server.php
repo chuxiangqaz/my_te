@@ -295,7 +295,7 @@ class Server
 
     private function registerEvent()
     {
-        //$this->ioEvent->addTimer("statistics", 1, [$this, "statistics"]);
+        $this->ioEvent->addTimer("statistics", 1, [$this, "statistics"]);
     }
 
 
