@@ -2,6 +2,7 @@
 
 namespace Te;
 
+use Te\Event\Event;
 use Te\Protocols\Protocols;
 
 class Server
@@ -66,13 +67,19 @@ class Server
     private $statisticsTime = 0;
 
     /**
+     * @var Event
+     */
+    private $ioEvent;
+
+    /**
      * @throws \Exception
      */
-    public function __construct($address, ?Protocols $protocols)
+    public function __construct($address, ?Protocols $protocols, Event $event)
     {
         $this->address = $address;
         $this->protocols = $protocols;
         $this->statisticsTime = time();
+        $this->ioEvent = $event;
     }
 
     public function on(string $eventName, \Closure $fu)
@@ -176,6 +183,7 @@ class Server
 
         $this->mainSocket = $socket;
         stream_set_blocking($this->mainSocket, false);
+        $this->ioEvent->addEvent($this->mainSocket, Event::READ_EVENT, [$this, "accept"]);
     }
 
     /**
@@ -196,64 +204,65 @@ class Server
      */
     public function eventLoop()
     {
-        while (1) {
-            $this->statistics();
-            //$this->heartbeat();
-            $read = [];
-            $read[] = $this->mainSocket;
-            $write = [];
-            $except = [];
-            foreach (self::$connection as $connect) {
-                $read[] = $connect->getFd();
-                $write[] = $connect->getFd();
-            }
-
-            /**
-             * 可读情况：
-             *      1. socket 内核接受缓冲区的字节数>= SO_RCVLOWAT 标识，执行读操作返回字节数大于0
-             *      2. 对端关闭时，此时读操作返回0
-             *      3. 监听 socket 有新的客户端连接时
-             *      4. socket 上有未处理的错误, 可使用getsocketopt 来读取和清除错误
-             * 可写情况
-             *      1. socket 内核发送缓冲区的可用字节数 >= SO_ANDLOWAT , 执行些操作字节数大于0
-             *      2. 对端关闭, 写操作会触发 SIGPIPE 中断信号
-             *      3. socket 有未处理的错误时候
-             * 异常情况
-             *      就是发送紧急数据（带外数据）时
-             * ---------------------
-             * select 可读事件发生：
-             * 当计算机的网卡收到数据时（对端关闭，socket错误，监听socket上的可读事件不谈），会把数据写入到内存中并向CPU发起硬件中断请求，CPU会响应去执行中断程序
-             * 并把数据（会根据端口号找到socket文件描述符）写入到对应的socket内核接受缓冲区中
-             * 同时唤醒当前进程（select 返回）
-             *  TODO 服务端端口只有一个是如何找到不一样的socket文件描述符
-             */
-            $numChange = stream_select($read, $write, $except, null);
-            if ($numChange === false || $numChange < 0) {
-                err("stream_select err");
-            }
-
-            if ($read) {
-                foreach ($read as $fd) {
-                    // 监听socket
-                    if ($fd === $this->mainSocket) {
-                        $this->accept();
-                    } else {
-                        // 连接 socket
-                        self::$connection[(int)$fd]->recv();
-                    }
-                }
-            }
-
-            if ($write) {
-                foreach ($write as $fd) {
-                        if (isset(self::$connection[(int)$fd])) {
-                            // 连接 socket
-                            self::$connection[(int)$fd]->write2socket();
-                        }
-
-                }
-            }
-        }
+        $this->ioEvent->eventLoop();
+//        while (1) {
+//            $this->statistics();
+//            //$this->heartbeat();
+//            $read = [];
+//            $read[] = $this->mainSocket;
+//            $write = [];
+//            $except = [];
+//            foreach (self::$connection as $connect) {
+//                $read[] = $connect->getFd();
+//                $write[] = $connect->getFd();
+//            }
+//
+//            /**
+//             * 可读情况：
+//             *      1. socket 内核接受缓冲区的字节数>= SO_RCVLOWAT 标识，执行读操作返回字节数大于0
+//             *      2. 对端关闭时，此时读操作返回0
+//             *      3. 监听 socket 有新的客户端连接时
+//             *      4. socket 上有未处理的错误, 可使用getsocketopt 来读取和清除错误
+//             * 可写情况
+//             *      1. socket 内核发送缓冲区的可用字节数 >= SO_ANDLOWAT , 执行些操作字节数大于0
+//             *      2. 对端关闭, 写操作会触发 SIGPIPE 中断信号
+//             *      3. socket 有未处理的错误时候
+//             * 异常情况
+//             *      就是发送紧急数据（带外数据）时
+//             * ---------------------
+//             * select 可读事件发生：
+//             * 当计算机的网卡收到数据时（对端关闭，socket错误，监听socket上的可读事件不谈），会把数据写入到内存中并向CPU发起硬件中断请求，CPU会响应去执行中断程序
+//             * 并把数据（会根据端口号找到socket文件描述符）写入到对应的socket内核接受缓冲区中
+//             * 同时唤醒当前进程（select 返回）
+//             *  TODO 服务端端口只有一个是如何找到不一样的socket文件描述符
+//             */
+//            $numChange = stream_select($read, $write, $except, null);
+//            if ($numChange === false || $numChange < 0) {
+//                err("stream_select err");
+//            }
+//
+//            if ($read) {
+//                foreach ($read as $fd) {
+//                    // 监听socket
+//                    if ($fd === $this->mainSocket) {
+//                        $this->accept();
+//                    } else {
+//                        // 连接 socket
+//                        self::$connection[(int)$fd]->recv();
+//                    }
+//                }
+//            }
+//
+//            if ($write) {
+//                foreach ($write as $fd) {
+//                        if (isset(self::$connection[(int)$fd])) {
+//                            // 连接 socket
+//                            self::$connection[(int)$fd]->write2socket();
+//                        }
+//
+//                }
+//            }
+//        }
     }
 
     public function runEvent($eventName, ...$args)
@@ -275,6 +284,8 @@ class Server
         }
         $connection = new TcpConnection($fd, $address, $this, $this->protocols);
         self::$connection[(int)$fd] = $connection;
+        $this->ioEvent->addEvent($fd, Event::READ_EVENT, [$connection, "recv"]);
+        $this->ioEvent->addEvent($fd, Event::WRITE_EVENT, [$connection, "write2socket"]);
         $this->onJoin($connection);
     }
 
