@@ -1,4 +1,5 @@
 <?php
+
 namespace Te\Event;
 
 interface Event
@@ -13,7 +14,7 @@ interface Event
      *
      * @return mixed
      */
-    public function addEvent($fd, $eventType, callable $callback);
+    public function addEvent($fd, $eventType, callable $callback): void;
 
 
     /**
@@ -21,9 +22,42 @@ interface Event
      *
      * @return mixed
      */
-    public function delEvent($fd, $eventType);
+    public function delEvent($fd, $eventType): void;
 
+    /**
+     * 添加信号事件
+     *
+     * @param $signal
+     * @param callable $callback
+     * @return void
+     */
+    public function addSignal($signal, callable $callback): void;
 
-    public  function eventLoop();
+    /**
+     * 删除信号事件
+     *
+     * @param $signal
+     */
+    public function delSignal($signal): void;
+
+    /**
+     * 添加定时事件
+     *
+     * @param string $timerName
+     * @param int $timer
+     * @param callable $callback
+     */
+    public function addTimer(string $timerName, int $timer, callable $callback): void;
+
+    /**
+     * 删除定时事件
+     *
+     * @param string $timerName
+     * @param int $timer
+     * @param callable $callback
+     */
+    public function delTimer(string $timerName): void;
+
+    public function eventLoop(): void;
 
 }

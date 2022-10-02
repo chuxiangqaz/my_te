@@ -153,6 +153,7 @@ class Server
     public function start()
     {
         $this->listen();
+        $this->registerEvent();
         $this->eventLoop();
     }
 
@@ -287,6 +288,11 @@ class Server
         $this->ioEvent->addEvent($fd, Event::READ_EVENT, [$connection, "recv"]);
         $this->ioEvent->addEvent($fd, Event::WRITE_EVENT, [$connection, "write2socket"]);
         $this->onJoin($connection);
+    }
+
+    private function registerEvent()
+    {
+        $this->ioEvent->addTimer("statistics", 1, [$this, "statistics"]);
     }
 
 
