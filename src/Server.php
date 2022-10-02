@@ -132,6 +132,8 @@ class Server
      */
     public function closeClient($fd)
     {
+        $this->ioEvent->delEvent($fd, Event::READ_EVENT);
+        $this->ioEvent->delEvent($fd, Event::WRITE_EVENT);
         $this->runEvent(EVENT_CLOSE, $this, self::$connection[(int)$fd]);
         unset(self::$connection[(int)$fd]);
         @fclose($fd);

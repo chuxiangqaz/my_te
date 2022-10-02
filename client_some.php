@@ -20,7 +20,7 @@ $clientNum = $argv[1] ?? 1;
 $clients = [];
 
 for ($i = 0; $i < $clientNum; $i++) {
-    $client = new Te\Client("tcp://127.0.0.1:12345", new Stream());
+    $client = new Te\Client("tcp://127.0.0.1:12345", new \Te\Protocols\Text());
 
     $client->on(EVENT_CONNECT, function (Client $client) {
         fprintf(STDOUT, "成功连接上服务端\r\n");
