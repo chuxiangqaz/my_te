@@ -13,6 +13,7 @@ $client->on(EVENT_CONNECT, function (Client $client) {
 
 $client->on(EVENT_RECEIVE, function (Client $client, $len, $message) {
     fprintf(STDOUT, "接收到服务端发送的数据len=%d,message=%s\r\n", $len, $message);
+    sleep(10);
     $client->send("i am client");
 });
 

@@ -69,7 +69,7 @@ class Server
     /**
      * @var Event
      */
-    private $ioEvent;
+    public $ioEvent;
 
     /**
      * @throws \Exception
@@ -288,13 +288,14 @@ class Server
         $connection = new TcpConnection($fd, $address, $this, $this->protocols);
         self::$connection[(int)$fd] = $connection;
         $this->ioEvent->addEvent($fd, Event::READ_EVENT, [$connection, "recv"]);
-        $this->ioEvent->addEvent($fd, Event::WRITE_EVENT, [$connection, "write2socket"]);
+        // 不添加可写事件,在需要写入的时候在添加可写事件，减少CPU通知消耗
+        //$this->ioEvent->addEvent($fd, Event::WRITE_EVENT, [$connection, "write2socket"]);
         $this->onJoin($connection);
     }
 
     private function registerEvent()
     {
-        $this->ioEvent->addTimer("statistics", 1, [$this, "statistics"]);
+        //$this->ioEvent->addTimer("statistics", 1, [$this, "statistics"]);
     }
 
 

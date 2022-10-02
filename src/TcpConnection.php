@@ -2,6 +2,7 @@
 
 namespace Te;
 
+use Te\Event\Event;
 use Te\Protocols\Protocols;
 
 class TcpConnection
@@ -74,7 +75,7 @@ class TcpConnection
      *
      * @var int
      */
-    private $sendBufferSize = 1024 * 100;
+    private $sendBufferSize = 1000 * 1000 * 1024;
 
     /**
      * 发送缓冲区满的次数
@@ -138,7 +139,7 @@ class TcpConnection
 
         } else {
             $this->recvBufferFull++;
-            $this->server->runEvent(EVENT_BUFFER_FULL, $this->server, $this);
+            $this->server->runEvent(EVENT_READ_BUFFER_FULL, $this->server, $this);
         }
 
         $this->handleMessage();
@@ -163,11 +164,11 @@ class TcpConnection
 
                 // 获取消息长度
                 $msgLen = $this->protocols->msgLen($this->bufferData);
-                $msg = substr($this->bufferData,0, $msgLen);
+                $msg = substr($this->bufferData, 0, $msgLen);
                 // 解码数据
                 $load = $this->protocols->decode($msg);
                 $this->bufferData = substr($this->bufferData, $msgLen);
-                $this->recvLen -=$msgLen;
+                $this->recvLen -= $msgLen;
                 // 接受客户端数据
                 $this->server->onRecvMsg($this, $msgLen, $load);
             }
@@ -188,7 +189,11 @@ class TcpConnection
             $this->sendBuffer .= $package;
         } else {
             $this->sendBufferFull++;
+            $this->server->runEvent(EVENT_WRITE_BUFFER_FULL, $this->server, $this);
         }
+
+        $this->server->ioEvent->addEvent($this->fd, Event::WRITE_EVENT, [$this, "write2socket"]);
+
     }
 
     /**
@@ -196,7 +201,7 @@ class TcpConnection
      *
      * @return bool
      */
-    private function needWrite() :bool
+    private function needWrite(): bool
     {
         return $this->sendLen > 0;
     }
@@ -212,12 +217,14 @@ class TcpConnection
         }
 
         // 1. 发送长度等于缓冲区长度  2. 发送长度 < 缓冲区长度  3. 对端关闭
-        $sendLen = @fwrite($this->fd, $this->sendBuffer, $this->sendLen);
-        //fprintf(STDOUT, "send msg len=%d\n", $sendLen);
+        $sendLen = fwrite($this->fd, $this->sendBuffer, $this->sendLen);
+        fprintf(STDOUT, "send msg len=%d\n", $sendLen);
         if ($sendLen === $this->sendLen) {
             $this->sendBuffer = '';
             $this->sendLen = 0;
+            $this->server->ioEvent->delEvent($this->fd, Event::WRITE_EVENT);
         } elseif ($sendLen > 0) {
+            echo "只发生了一半" . $sendLen;
             $this->sendBuffer .= substr($this->sendBuffer, $sendLen);
             $this->sendLen -= $sendLen;
         } else {
@@ -254,8 +261,6 @@ class TcpConnection
     {
         return $this->fd;
     }
-
-
 
 
 }
