@@ -76,6 +76,18 @@ class Server
     public $ioEvent;
 
     /**
+     * @var array
+     */
+    /**
+     * @var array
+     */
+    private $pids;
+    /**
+     * @var string
+     */
+    private $serviceStatus;
+
+    /**
      * @throws \Exception
      */
     public function __construct($address, ?Protocols $protocols, Event $event, array  $setting = [])
@@ -85,6 +97,7 @@ class Server
         $this->statisticsTime = time();
         $this->ioEvent = $event;
         $this->setting += $setting;
+
     }
 
     public function on(string $eventName, \Closure $fu)
@@ -151,7 +164,7 @@ class Server
         if (($sub = $now - $this->statisticsTime) < 1) {
             return;
         }
-        record(RECORD_DEBUG, "time=%d---接收到客户端:%d---fread=%s---revcmsg=%s", $sub, $this->clientNum, $this->recvNum /1000 .'K', $this->msgNum/ 1000 .'K');
+        //record(RECORD_DEBUG, "time=%d---接收到客户端:%d---fread=%s---revcmsg=%s", $sub, $this->clientNum, $this->recvNum /1000 .'K', $this->msgNum/ 1000 .'K');
         $this->recvNum = 0;
         $this->msgNum = 0;
         $this->statisticsTime = $now;
@@ -159,24 +172,39 @@ class Server
 
     public function start()
     {
-        for ($i=0;$i<$this->setting['work']; $i++) {
+
+        $this->forkWork($this->setting['work']);
+        // 注册主进程信号
+        $this->registerSigV2();
+
+        $this->waitChild();
+
+
+    }
+
+
+    /**
+     * fork子进程
+     *
+     * @param int $num
+     */
+    public function forkWork(int $num = 1): void
+    {
+
+        for ($i=0;$i<$num; $i++) {
             $pid = pcntl_fork();
-            if ($pid == -1) {
+            if ($pid === -1) {
                 record(RECORD_ERR, "fork err return -1");
-            } elseif ($pid == 0) {
+            } elseif ($pid === 0) {
                 // 子进程
                 $this->work();
                 exit(0);
             } else {
                 // 夫进程
+                $this->pids[$pid] = true;
                 record(RECORD_INFO, "fork success,pid=%d", $pid);
             }
         }
-
-        // 回收子进程
-        pcntl_wait($status);
-        sleep(2000);
-
     }
 
     // work 进程处理请求
@@ -325,6 +353,86 @@ class Server
     private function registerEvent()
     {
         $this->ioEvent->addTimer("statistics", 1, [$this, "statistics"]);
+    }
+
+    /**
+     * 信号注册V1版本, 子进程退出回收使用 SIGCHLD 信号进行处理，但是由于信号处理函数的逻辑如果过大，会回收子进程比较慢（因为信号函数是一个一个执行的）
+     */
+    private function registerSigV1(): void
+    {
+        $chldFn = function () {
+            $id = pcntl_waitpid(-1, $status, WNOHANG);
+            record(RECORD_INFO, "回收子进程退出pid=%d,status=%d", $id, $status);
+            $pid = pcntl_fork();
+            if ($pid == -1) {
+                record(RECORD_ERR, "fork err return -1");
+            } elseif ($pid == 0) {
+                // 子进程
+                $this->work();
+                exit(0);
+            } else {
+                // 夫进程
+                record(RECORD_INFO, "fork success,pid=%d", $pid);
+            }
+            unset($$this->pid[$id]);
+            $this->pids[$pid] = true;
+        };
+
+        if ($this->serviceStatus == 'wait_close') {
+            $chldFn = SIG_DFL;
+        }
+
+        pcntl_signal(SIGCHLD, $chldFn, true);
+
+        pcntl_signal(SIGTERM, function () {
+            $this->serviceStatus = 'wait_close';
+           // 发送退出信号
+            foreach ($this->pids as $pid => $v) {
+                posix_kill($pid, SIGTERM);
+                pcntl_waitpid($pid, $status);
+                record(RECORD_INFO, "已经回收了子进程 %d", $pid);
+            }
+
+            exit(0);
+        }, false);
+
+    }
+
+    /**
+     * 注册信号V2版本, 回收进程由 master 进程回收
+     */
+    private function registerSigV2(): void
+    {
+        pcntl_signal(SIGTERM, function () {
+            $this->serviceStatus = 'wait_close';
+            foreach ($this->pids as $pid => $v) {
+                posix_kill($pid, SIGTERM);
+            }
+        }, true);
+    }
+
+    /**
+     * 监控子进程
+     */
+    private function waitChild()
+    {
+
+        while (true) {
+            pcntl_signal_dispatch();
+            $pid = pcntl_wait($status, WNOHANG);
+            if ($pid >0) {
+                record(RECORD_INFO, "回收子进程退出pid=%d,status=%d", $pid, $status);
+                unset($this->pids[$pid]);
+
+                if ($this->serviceStatus != 'wait_close') {
+                    $this->forkWork();
+                }
+
+                if (empty($this->pids)) {
+                    break;
+                }
+            }
+        }
     }
 
 

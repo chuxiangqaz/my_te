@@ -23,7 +23,6 @@ class Epoll implements Event
     public function __construct()
     {
         $this->eventBase = new EventBase();
-
     }
 
     public function addEvent($fd, $eventType, callable $callback): void
