@@ -66,6 +66,10 @@ class Server
      */
     private $statisticsTime = 0;
 
+    private $setting = [
+        "work" => 2,
+    ];
+
     /**
      * @var Event
      */
@@ -74,12 +78,13 @@ class Server
     /**
      * @throws \Exception
      */
-    public function __construct($address, ?Protocols $protocols, Event $event)
+    public function __construct($address, ?Protocols $protocols, Event $event, array  $setting = [])
     {
         $this->address = $address;
         $this->protocols = $protocols;
         $this->statisticsTime = time();
         $this->ioEvent = $event;
+        $this->setting += $setting;
     }
 
     public function on(string $eventName, \Closure $fu)
@@ -146,13 +151,36 @@ class Server
         if (($sub = $now - $this->statisticsTime) < 1) {
             return;
         }
-        fprintf(STDOUT, "time=%d---接收到客户端:%d---fread=%s---revcmsg=%s\r\n", $sub, $this->clientNum, $this->recvNum /1000 .'K', $this->msgNum/ 1000 .'K');
+        record(RECORD_DEBUG, "time=%d---接收到客户端:%d---fread=%s---revcmsg=%s", $sub, $this->clientNum, $this->recvNum /1000 .'K', $this->msgNum/ 1000 .'K');
         $this->recvNum = 0;
         $this->msgNum = 0;
         $this->statisticsTime = $now;
     }
 
     public function start()
+    {
+        for ($i=0;$i<$this->setting['work']; $i++) {
+            $pid = pcntl_fork();
+            if ($pid == -1) {
+                record(RECORD_ERR, "fork err return -1");
+            } elseif ($pid == 0) {
+                // 子进程
+                $this->work();
+                exit(0);
+            } else {
+                // 夫进程
+                record(RECORD_INFO, "fork success,pid=%d", $pid);
+            }
+        }
+
+        // 回收子进程
+        pcntl_wait($status);
+        sleep(2000);
+
+    }
+
+    // work 进程处理请求
+    public function work()
     {
         $this->listen();
         $this->registerEvent();
@@ -176,6 +204,7 @@ class Server
 
         // 设置套接字半连接队列大小
         $options['socket']['backlog'] = 1000;
+        $options['socket']['so_reuseport'] = true;
         $context = stream_context_create($options);
 
         // socket, bind, listen

@@ -11,7 +11,8 @@
   ],
   "require": {
     "symfony/var-dumper": "^4.4",
-    "ext-event": "*"
+    "ext-event": "*",
+    "ext-pcntl": "*"
   },
   "autoload": {
     "psr-4": {

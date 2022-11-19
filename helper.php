@@ -17,7 +17,9 @@ function err($errMsg, $errCode = -1)
 }
 
 
-function record($level, $msg)
+function record($level, $msg, ...$arg)
 {
-    sprintf(STDOUT, "[$level]$msg");
+    $msg = sprintf($msg, ...$arg);
+    $pid = getmypid();
+    fprintf(STDOUT, "[$pid][$level]$msg" .PHP_EOL);
 }
