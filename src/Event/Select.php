@@ -48,7 +48,7 @@ class Select implements Event
 
             if (!empty($this->events["timer"])) {
                 foreach ($this->events["timer"] as &$runInfo) {
-                    if ($runInfo['next'] < time()) {
+                    if ($runInfo['next'] <= time()) {
                         $runInfo['callback']();
                         $runInfo['next'] = time() + $runInfo['time'];
                     }

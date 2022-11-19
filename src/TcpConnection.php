@@ -192,7 +192,7 @@ class TcpConnection
             $this->server->runEvent(EVENT_WRITE_BUFFER_FULL, $this->server, $this);
         }
 
-        $this->server->ioEvent->addEvent($this->fd, Event::WRITE_EVENT, [$this, "write2socket"]);
+        $this->write2socket();
 
     }
 
@@ -226,6 +226,7 @@ class TcpConnection
         } elseif ($sendLen > 0) {
             $this->sendBuffer .= substr($this->sendBuffer, $sendLen);
             $this->sendLen -= $sendLen;
+            $this->server->ioEvent->addEvent($this->fd, Event::WRITE_EVENT, [$this, "write2socket"]);
         } else {
             // 对端关闭
             $this->server->closeClient($this->fd);

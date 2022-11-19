@@ -15,6 +15,7 @@ $server->on(EVENT_CONNECT, function (Server $server, TcpConnection $connection) 
 
 $server->on(EVENT_RECEIVE, function (Server $server, TcpConnection $connection, $len, $message) {
     //fprintf(STDOUT, "recvmsg: [%s]len=%d,message=%s\r\n", $connection->getAddress(), $len, $message);
+    // 已经关闭了
     $connection->send(" i am server");
 });
 
