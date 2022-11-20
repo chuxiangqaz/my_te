@@ -82,4 +82,36 @@ class Epoll implements Event
         unset($this->events["timer"][$timerName]);
     }
 
+    public function stop(): void
+    {
+        if (!empty($this->events["io"])) {
+            foreach ($this->events["io"] as $fd => $rwEvent) {
+                foreach ($rwEvent as $rw => $event) {
+                    $event->del();
+                }
+            }
+
+            record(RECORD_INFO, "删除了IO事件监听");
+        }
+
+        if (!empty($this->events["timer"])) {
+            foreach ($this->events["timer"] as $key => $event) {
+                $event->del();
+            }
+
+            record(RECORD_INFO, "删除了timer事件监听");
+        }
+
+        if (!empty($this->events["signal"])) {
+            foreach ($this->events["signal"] as $sig => $event) {
+                $event->del();
+            }
+
+            record(RECORD_INFO, "删除了signal事件监听");
+        }
+
+        $this->events = [];
+        $this->eventBase->stop();
+        record(RECORD_INFO, "停止了事件循环");
+    }
 }

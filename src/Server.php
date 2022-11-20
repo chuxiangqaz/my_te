@@ -78,19 +78,22 @@ class Server
     /**
      * @var array
      */
-    /**
-     * @var array
-     */
     private $pids;
+
     /**
      * @var string
      */
     private $serviceStatus;
 
     /**
+     * @var int
+     */
+    private $masterPid;
+
+    /**
      * @throws \Exception
      */
-    public function __construct($address, ?Protocols $protocols, Event $event, array  $setting = [])
+    public function __construct($address, ?Protocols $protocols, Event $event, array $setting = [])
     {
         $this->address = $address;
         $this->protocols = $protocols;
@@ -172,14 +175,14 @@ class Server
 
     public function start()
     {
-
-        $this->forkWork($this->setting['work']);
+        // 获取 matser 进程id
+        $this->setMasterPid();
         // 注册主进程信号
         $this->registerSigV2();
-
+        // fork child process
+        $this->forkWork($this->setting['work']);
+        // 等待子进程退出
         $this->waitChild();
-
-
     }
 
 
@@ -191,7 +194,7 @@ class Server
     public function forkWork(int $num = 1): void
     {
 
-        for ($i=0;$i<$num; $i++) {
+        for ($i = 0; $i < $num; $i++) {
             $pid = pcntl_fork();
             if ($pid === -1) {
                 record(RECORD_ERR, "fork err return -1");
@@ -249,7 +252,7 @@ class Server
     /**
      * 心跳检查
      */
-    public function heartbeat() :void
+    public function heartbeat(): void
     {
         foreach (self::$connection as $connect) {
             if (time() - $connect->heatTime > 10) {
@@ -350,9 +353,23 @@ class Server
         $this->onJoin($connection);
     }
 
+    /**
+     * 注册 work 进程的信号 定时器等读写事件
+     */
     private function registerEvent()
     {
+        $childExitFn = function () {
+            $this->gc();
+            exit(0);
+
+        };
         $this->ioEvent->addTimer("statistics", 1, [$this, "statistics"]);
+        pcntl_signal(SIGTERM, SIG_IGN, true);
+        pcntl_signal(SIGINT, SIG_IGN, true);
+        pcntl_signal(SIGQUIT, SIG_IGN, true);
+        $this->ioEvent->addSignal(SIGTERM, $childExitFn);
+        $this->ioEvent->addSignal(SIGINT, $childExitFn);
+        $this->ioEvent->addSignal(SIGQUIT, $childExitFn);
     }
 
     /**
@@ -386,7 +403,7 @@ class Server
 
         pcntl_signal(SIGTERM, function () {
             $this->serviceStatus = 'wait_close';
-           // 发送退出信号
+            // 发送退出信号
             foreach ($this->pids as $pid => $v) {
                 posix_kill($pid, SIGTERM);
                 pcntl_waitpid($pid, $status);
@@ -403,24 +420,29 @@ class Server
      */
     private function registerSigV2(): void
     {
-        pcntl_signal(SIGTERM, function () {
+        $exitFn = function () {
+            // 父进程
             $this->serviceStatus = 'wait_close';
             foreach ($this->pids as $pid => $v) {
                 posix_kill($pid, SIGTERM);
             }
-        }, true);
+
+        };
+
+        pcntl_signal(SIGTERM, $exitFn, true);
+        pcntl_signal(SIGINT, $exitFn, true);
+        pcntl_signal(SIGQUIT, $exitFn, true);
     }
 
     /**
      * 监控子进程
      */
-    private function waitChild()
+    private function waitChild(): void
     {
-
         while (true) {
             pcntl_signal_dispatch();
             $pid = pcntl_wait($status, WNOHANG);
-            if ($pid >0) {
+            if ($pid > 0) {
                 record(RECORD_INFO, "回收子进程退出pid=%d,status=%d", $pid, $status);
                 unset($this->pids[$pid]);
 
@@ -433,6 +455,35 @@ class Server
                 }
             }
         }
+    }
+
+    /**
+     * 进行垃圾回收
+     */
+    private function gc()
+    {
+        // 暂停事件循环
+        $this->ioEvent->stop();
+        // 关闭客户端
+        foreach (self::$connection as $connect) {
+            $this->closeClient($connect->getFd());
+        }
+
+        // 关闭socket
+        fclose($this->mainSocket);
+    }
+
+    /**
+     * 设置 master 进程的 pid
+     */
+    private function setMasterPid()
+    {
+        $pid = getmypid();
+        if ($pid === false) {
+            err("获取master pid 失败");
+        }
+
+        $this->masterPid = getmypid();
     }
 
 

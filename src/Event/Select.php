@@ -7,6 +7,8 @@ class Select implements Event
 
     private $events;
 
+    private $exit = false;
+
     public function addEvent($fd, $eventType, callable $callback): void
     {
         $this->events["io"][$eventType][(int)$fd] = ['fd' => $fd, 'callback' => $callback];
@@ -42,6 +44,10 @@ class Select implements Event
     public function eventLoop(): void
     {
         while (1) {
+            if ($this->exit) {
+                break;
+            }
+
             if (!empty($this->events["signal"])) {
                 pcntl_signal_dispatch();
             }
@@ -76,10 +82,6 @@ class Select implements Event
 
                 $numChange = stream_select($read, $write, $exp, 0, 0);
 
-                if ($numChange === false || $numChange < 0) {
-                    err("stream_select err");
-                }
-
                 if ($numChange == 0) {
                     continue;
                 }
@@ -98,5 +100,16 @@ class Select implements Event
                 }
             }
         }
+    }
+
+    public function stop(): void
+    {
+       foreach ($this->events as $type => &$events) {
+           $events = [];
+           record(RECORD_INFO, "删除了事件监听,type=%s", $type);
+       }
+
+       $this->exit = true;
+        record(RECORD_INFO, "停止了事件循环");
     }
 }

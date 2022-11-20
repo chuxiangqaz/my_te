@@ -58,6 +58,16 @@ interface Event
      */
     public function delTimer(string $timerName): void;
 
+    /**
+     * 进行事件循环的转发
+     */
     public function eventLoop(): void;
+
+    /**
+     * 停止事件循环转发
+     *
+     * @return mixed
+     */
+    public function stop() : void;
 
 }
