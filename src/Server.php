@@ -175,6 +175,7 @@ class Server
 
     public function start()
     {
+        cli_set_process_title("te master");
         // 获取 matser 进程id
         $this->setMasterPid();
         // 注册主进程信号
@@ -213,6 +214,7 @@ class Server
     // work 进程处理请求
     public function work()
     {
+        cli_set_process_title("te work");
         $this->listen();
         $this->registerEvent();
         $this->eventLoop();
@@ -426,7 +428,6 @@ class Server
             foreach ($this->pids as $pid => $v) {
                 posix_kill($pid, SIGTERM);
             }
-
         };
 
         pcntl_signal(SIGTERM, $exitFn, true);

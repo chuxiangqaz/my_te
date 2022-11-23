@@ -13,9 +13,9 @@ const EVENT_WRITE_BUFFER_FULL = 'write_buffer_full';
 
 function err($errMsg, $errCode = -1)
 {
-    throw new \Exception($errMsg, $errCode);
+    record(RECORD_ERR, $errMsg);
+    exit(1);
 }
-
 
 function record($level, $msg, ...$arg)
 {
