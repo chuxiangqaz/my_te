@@ -265,7 +265,7 @@ class Server
 
         socket_bind($socket, $serverSocket);
         $this->taskSocket = $socket;
-        $this->ioEvent->addEvent($this->taskSocket, Event::READ_EVENT, [$this, 'taskAccept']);
+        $this->ioEvent->addEvent(socket_export_stream($socket), Event::READ_EVENT, [$this, 'taskAccept']);
     }
 
     public function taskAccept()

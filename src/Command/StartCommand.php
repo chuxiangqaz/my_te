@@ -27,7 +27,7 @@ class StartCommand extends Command
             record(RECORD_DEBUG, "recvmsg: [%s]len=%d,message=%s\r\n", $connection->getAddress(), $len, $message);
             // 已经关闭了
             $connection->send(" i am server");
-            $server->sendTask("task异步处理吧");
+            $server->sendTask($message);
         });
 
         $server->on(EVENT_CLOSE, function (Server $server, TcpConnection $connection) {
@@ -43,7 +43,7 @@ class StartCommand extends Command
         });
 
         $server->on(EVENT_TASK_RECEIVE, function ($msg, $clientAddress) {
-            record(RECORD_DEBUG, "task进程接受到的数据". $msg);
+            record(RECORD_DEBUG, "task进程接受到的数据:". $msg);
         });
 
         $server->on(EVENT_TASK_CLOSE, function () {
