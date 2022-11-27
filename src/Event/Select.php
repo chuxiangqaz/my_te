@@ -80,7 +80,7 @@ class Select implements Event
                     }
                 }
 
-                $numChange = stream_select($read, $write, $exp, 0, 0);
+                $numChange = @stream_select($read, $write, $exp, 0, 0);
 
                 if ($numChange == 0) {
                     continue;

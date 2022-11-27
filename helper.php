@@ -10,6 +10,8 @@ const EVENT_RECEIVE = 'receive';
 const EVENT_CLOSE = 'close';
 const EVENT_READ_BUFFER_FULL = 'read_buffer_full';
 const EVENT_WRITE_BUFFER_FULL = 'write_buffer_full';
+const EVENT_TASK_RECEIVE = 'task_receive';
+const EVENT_TASK_CLOSE = 'task_close';
 
 function err($errMsg, $errCode = -1)
 {

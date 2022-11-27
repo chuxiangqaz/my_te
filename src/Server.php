@@ -66,9 +66,7 @@ class Server
      */
     private $statisticsTime = 0;
 
-    private $setting = [
-        "work" => 2,
-    ];
+    private $setting = [];
 
     /**
      * @var Event
@@ -91,16 +89,25 @@ class Server
     private $masterPid;
 
     /**
+     * @var \Socket
+     */
+    private $taskSocket;
+
+    /**
+     * 连接 task 进程的 客户端
+     * @var \Socket
+     */
+    private $workClientSocket;
+
+    /**
      * @throws \Exception
      */
-    public function __construct($address, ?Protocols $protocols, Event $event, array $setting = [])
+    public function __construct(array $setting = [])
     {
-        $this->address = $address;
-        $this->protocols = $protocols;
-        $this->statisticsTime = time();
-        $this->ioEvent = $event;
         $this->setting += $setting;
-
+        $this->address = $this->setting['address'];
+        $this->protocols = new $this->setting['protocols']();
+        $this->statisticsTime = time();
     }
 
     public function on(string $eventName, \Closure $fu)
@@ -175,25 +182,40 @@ class Server
 
     public function start()
     {
-        cli_set_process_title("te master");
+        cli_set_process_title("Te/master");
         // 获取 matser 进程id
         $this->setMasterPid();
         // 注册主进程信号
         $this->registerSigV2();
         // fork child process
-        $this->forkWork($this->setting['work']);
+        $this->forkWork($this->setting['work'], [$this, 'work'], [$this, 'workSuccess']);
+        $this->forkWork($this->setting['task'], [$this, 'task'], [$this, 'taskSuccess']);
         // 等待子进程退出
         $this->waitChild();
     }
 
+    public function workSuccess($pid)
+    {
+        $this->pids[$pid] = "work";
+        record(RECORD_INFO, "fork work success,pid=%d", $pid);
+    }
+
+    public function taskSuccess($pid)
+    {
+        $this->pids[$pid] = "task";
+        record(RECORD_INFO, "fork task success,pid=%d", $pid);
+    }
 
     /**
      * fork子进程
      *
      * @param int $num
      */
-    public function forkWork(int $num = 1): void
+    public function forkWork(int $num, callable $children, callable $forkSuccess): void
     {
+        if ($num ===0) {
+            return;
+        }
 
         for ($i = 0; $i < $num; $i++) {
             $pid = pcntl_fork();
@@ -201,12 +223,10 @@ class Server
                 record(RECORD_ERR, "fork err return -1");
             } elseif ($pid === 0) {
                 // 子进程
-                $this->work();
+                $children($i);
                 exit(0);
             } else {
-                // 夫进程
-                $this->pids[$pid] = true;
-                record(RECORD_INFO, "fork success,pid=%d", $pid);
+                $forkSuccess($pid);
             }
         }
     }
@@ -214,11 +234,51 @@ class Server
     // work 进程处理请求
     public function work()
     {
-        cli_set_process_title("te work");
+        // 需要再每一个子进程里适用自己的 event base
+        // 不然当监听只会触发一个子进程
+        $this->ioEvent = new $this->setting['event']();
+        cli_set_process_title("Te/work");
         $this->listen();
         $this->registerEvent();
+        $this->connectTask();
         $this->eventLoop();
     }
+
+    public function task($i)
+    {
+        $this->ioEvent = new $this->setting['event']();
+        cli_set_process_title("Te/task");
+        $this->taskAccept($i);
+        $this->registerTaskEvent();
+        $this->eventLoop();
+    }
+
+    public function taskAccept($i)
+    {
+        $socket = socket_create(AF_UNIX, SOCK_DGRAM, 0);
+        if ($socket === false) {
+            err("create unix server err :" . socket_strerror(socket_last_error()));
+        }
+
+        @unlink("/tmp/te_{$i}.socket");
+        if (!socket_bind($socket, "/tmp/te_{$i}.socket")) {
+            err("socket_bind err :" . socket_strerror(socket_last_error()));
+        }
+
+        $this->taskSocket = $socket;
+        $this->ioEvent->addEvent($this->taskSocket, Event::READ_EVENT, [$this, 'taskRead']);
+    }
+
+    public function taskRead()
+    {
+        $data = socket_recvfrom($this->taskSocket, $msg, 65535, 0, $clientAddress);
+        if ($data === false) {
+            $this->runEvent(EVENT_TASK_CLOSE);
+        } else {
+            $this->runEvent(EVENT_TASK_RECEIVE, $msg, $clientAddress);
+        }
+    }
+
 
     public function listen()
     {
@@ -445,10 +505,11 @@ class Server
             $pid = pcntl_wait($status, WNOHANG);
             if ($pid > 0) {
                 record(RECORD_INFO, "回收子进程退出pid=%d,status=%d", $pid, $status);
+                $processType = $this->pids[$pid];
                 unset($this->pids[$pid]);
 
                 if ($this->serviceStatus != 'wait_close') {
-                    $this->forkWork();
+                    $this->forkWork(1, [$this, $processType], [$this, $processType . 'Success']);
                 }
 
                 if (empty($this->pids)) {
@@ -487,5 +548,37 @@ class Server
         $this->masterPid = getmypid();
     }
 
+    private function registerTaskEvent()
+    {
+        $childExitFn = function () {
+            // 暂停事件循环
+            $this->ioEvent->stop();
+            socket_shutdown($this->taskSocket);
+            socket_close($this->taskSocket);
+            exit(0);
 
+        };
+        pcntl_signal(SIGTERM, SIG_IGN, true);
+        pcntl_signal(SIGINT, SIG_IGN, true);
+        pcntl_signal(SIGQUIT, SIG_IGN, true);
+        $this->ioEvent->addSignal(SIGTERM, $childExitFn);
+        $this->ioEvent->addSignal(SIGINT, $childExitFn);
+        $this->ioEvent->addSignal(SIGQUIT, $childExitFn);
+    }
+
+    private function connectTask()
+    {
+        // 创建客户端 socket
+        $pid = getmypid();
+        @unlink("/tmp/te_task_client_{$pid}.socket");
+        $socket = socket_create(AF_UNIX, SOCK_DGRAM, 0);
+        socket_bind($socket, "/tmp/te_task_client_{$pid}.socket");
+        $this->workClientSocket = $socket;
+    }
+
+    public function sendTask($data)
+    {
+        $len = socket_sendto($this->workClientSocket, $data, strlen($data), 0, "/tmp/te_0.socket");
+        record(RECORD_INFO, "发送给task进程len=" . $len);
+    }
 }

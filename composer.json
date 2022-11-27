@@ -13,7 +13,8 @@
     "symfony/var-dumper": "^4.4",
     "ext-event": "*",
     "ext-pcntl": "*",
-    "ext-posix": "*"
+    "ext-posix": "*",
+    "ext-sockets": "*"
   },
   "autoload": {
     "psr-4": {
