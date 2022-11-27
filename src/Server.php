@@ -2,6 +2,7 @@
 
 namespace Te;
 
+use Opis\Closure\SerializableClosure;
 use Te\Event\Event;
 use Te\Protocols\Protocols;
 
@@ -274,7 +275,13 @@ class Server
         if ($data === false) {
             $this->runEvent(EVENT_TASK_CLOSE);
         } else {
-            $this->runEvent(EVENT_TASK_RECEIVE, $msg, $clientAddress);
+            $wrapper = unserialize($msg);
+            if ($wrapper !== false) {
+                $closure = $wrapper->getClosure();
+                $closure();
+            } else {
+                $this->runEvent(EVENT_TASK_RECEIVE, $msg, $clientAddress);
+            }
         }
     }
 
@@ -576,10 +583,15 @@ class Server
         $this->workClientSocket = $socket;
     }
 
-    public function sendTask($data)
+    public function sendTask($msg)
     {
         $serverSocket = sprintf($this->setting['task']['server_socket'], rand(0, $this->setting['task']['num'] - 1));
-        $len = socket_sendto($this->workClientSocket, $data, strlen($data), 0, $serverSocket);
+        if (is_callable($msg)) {
+            $wrapper = new SerializableClosure($msg);
+            $msg = serialize($wrapper);
+        }
+
+        $len = socket_sendto($this->workClientSocket, $msg, strlen($msg), 0, $serverSocket);
         record(RECORD_INFO, "send task msg len = %d", $len);
     }
 }
