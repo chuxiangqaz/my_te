@@ -21,7 +21,7 @@
      - [x] 事件监听回收
    - [x] 平滑重启 
    - [x] socket 惊群
-   - [ ] 禁用 nagle 算法
+   - [x] 禁用 nagle 算法
 
 2. Client
 
