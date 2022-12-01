@@ -51,6 +51,9 @@
 1. Nginx中使用mutex互斥锁解决这个问题。
 2. 使用 `reuseport` 选项socket,由内核进行负载均衡通知进程。
 
+
+## Nagle 算法
+
    
 
 

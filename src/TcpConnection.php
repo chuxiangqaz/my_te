@@ -261,6 +261,4 @@ class TcpConnection
     {
         return $this->fd;
     }
-
-
 }

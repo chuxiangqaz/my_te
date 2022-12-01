@@ -14,7 +14,8 @@
     "ext-event": "*",
     "ext-pcntl": "*",
     "ext-posix": "*",
-    "ext-sockets": "*"
+    "ext-sockets": "*",
+    "opis/closure": "^3.6"
   },
   "autoload": {
     "psr-4": {

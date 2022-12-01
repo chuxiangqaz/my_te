@@ -2,6 +2,7 @@
 
 namespace Te;
 
+use Opis\Closure\SerializableClosure;
 use Te\Event\Event;
 use Te\Protocols\Protocols;
 
@@ -189,7 +190,7 @@ class Server
         $this->registerSigV2();
         // fork child process
         $this->forkWork($this->setting['work'], [$this, 'work'], [$this, 'workSuccess']);
-        $this->forkWork($this->setting['task'], [$this, 'task'], [$this, 'taskSuccess']);
+        $this->forkWork($this->setting['task']['num'], [$this, 'task'], [$this, 'taskSuccess']);
         // 等待子进程退出
         $this->waitChild();
     }
@@ -213,7 +214,7 @@ class Server
      */
     public function forkWork(int $num, callable $children, callable $forkSuccess): void
     {
-        if ($num ===0) {
+        if ($num === 0) {
             return;
         }
 
@@ -248,34 +249,39 @@ class Server
     {
         $this->ioEvent = new $this->setting['event']();
         cli_set_process_title("Te/task");
-        $this->taskAccept($i);
+        $this->createTask($i);
         $this->registerTaskEvent();
         $this->eventLoop();
     }
 
-    public function taskAccept($i)
+    public function createTask($i)
     {
+        $serverSocket = sprintf($this->setting['task']['server_socket'], $i);
+        @unlink($serverSocket);
+
         $socket = socket_create(AF_UNIX, SOCK_DGRAM, 0);
         if ($socket === false) {
-            err("create unix server err :" . socket_strerror(socket_last_error()));
+            err("create task server socket err:" . socket_strerror(socket_last_error()));
         }
 
-        @unlink("/tmp/te_{$i}.socket");
-        if (!socket_bind($socket, "/tmp/te_{$i}.socket")) {
-            err("socket_bind err :" . socket_strerror(socket_last_error()));
-        }
-
+        socket_bind($socket, $serverSocket);
         $this->taskSocket = $socket;
-        $this->ioEvent->addEvent($this->taskSocket, Event::READ_EVENT, [$this, 'taskRead']);
+        $this->ioEvent->addEvent(socket_export_stream($socket), Event::READ_EVENT, [$this, 'taskAccept']);
     }
 
-    public function taskRead()
+    public function taskAccept()
     {
         $data = socket_recvfrom($this->taskSocket, $msg, 65535, 0, $clientAddress);
         if ($data === false) {
             $this->runEvent(EVENT_TASK_CLOSE);
         } else {
-            $this->runEvent(EVENT_TASK_RECEIVE, $msg, $clientAddress);
+            $wrapper = unserialize($msg);
+            if ($wrapper !== false) {
+                $closure = $wrapper->getClosure();
+                $closure();
+            } else {
+                $this->runEvent(EVENT_TASK_RECEIVE, $msg, $clientAddress);
+            }
         }
     }
 
@@ -570,15 +576,22 @@ class Server
     {
         // 创建客户端 socket
         $pid = getmypid();
-        @unlink("/tmp/te_task_client_{$pid}.socket");
+        $clientSocket = sprintf($this->setting['task']['client_socket'], $pid);
+        @unlink($clientSocket);
         $socket = socket_create(AF_UNIX, SOCK_DGRAM, 0);
-        socket_bind($socket, "/tmp/te_task_client_{$pid}.socket");
+        socket_bind($socket, $clientSocket);
         $this->workClientSocket = $socket;
     }
 
-    public function sendTask($data)
+    public function sendTask($msg)
     {
-        $len = socket_sendto($this->workClientSocket, $data, strlen($data), 0, "/tmp/te_0.socket");
-        record(RECORD_INFO, "发送给task进程len=" . $len);
+        $serverSocket = sprintf($this->setting['task']['server_socket'], rand(0, $this->setting['task']['num'] - 1));
+        if (is_callable($msg)) {
+            $wrapper = new SerializableClosure($msg);
+            $msg = serialize($wrapper);
+        }
+
+        $len = socket_sendto($this->workClientSocket, $msg, strlen($msg), 0, $serverSocket);
+        record(RECORD_INFO, "send task msg len = %d", $len);
     }
 }
