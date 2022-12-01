@@ -304,6 +304,7 @@ class Server
         // 设置套接字半连接队列大小
         $options['socket']['backlog'] = 1000;
         $options['socket']['so_reuseport'] = true;
+        $options['socket']['tcp_nodelay'] = 1;
         $context = stream_context_create($options);
 
         // socket, bind, listen
