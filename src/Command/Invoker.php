@@ -10,6 +10,7 @@ class Invoker
     public $command = [
         StartCommand::class,
         StopCommand::class,
+        HelpCommand::class,
     ];
 
     /**
@@ -20,13 +21,16 @@ class Invoker
 
     public function __construct($args)
     {
-        foreach ($this->command as $cmdName) {
-            $class = new $cmdName($args);
-            if ($class->signature == $args[1]) {
-               $this->cmd = $class;
-               return;
+        if (isset($args[1])) {
+            foreach ($this->command as $cmdName) {
+                $class = new $cmdName($args);
+                if ($class->signature == $args[1]) {
+                    $this->cmd = $class;
+                    return;
+                }
             }
         }
+
 
         $this->cmd = new NoneCommand($args);
 

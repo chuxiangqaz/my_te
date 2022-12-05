@@ -7,6 +7,8 @@ class StopCommand extends Command
 
     public $signature = 'stop';
 
+    public $desc = 'stop te server';
+
     public function exec()
     {
         if (!$this->masterExist()) {

@@ -7,6 +7,9 @@ abstract class Command
     // 命令模式
     public $signature = '';
 
+    // 描述
+    public $desc = '';
+
     protected $args;
 
     /**
@@ -22,7 +25,7 @@ abstract class Command
     public function __construct($args)
     {
         $this->args = $args;
-        $this->fileName = $this->args[0];
+        $this->fileName = $this->args[0] ?? '';
         $this->config = require "config.php";
     }
 

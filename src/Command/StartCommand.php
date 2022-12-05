@@ -10,6 +10,8 @@ class StartCommand extends Command
 
     public $signature = 'start';
 
+    public $desc = 'start te server';
+
     public function exec()
     {
         if ($this->masterExist()) {
