@@ -24,7 +24,7 @@ EOF;
             }
 
             $result .= <<<EOF
- --{$cmd->signature}\t\t{$cmd->desc}
+ php te.php {$cmd->signature}\t\t{$cmd->desc}
 
 EOF;
         }
