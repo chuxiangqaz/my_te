@@ -304,7 +304,6 @@ class Server
         // 设置套接字半连接队列大小
         $options['socket']['backlog'] = 1000;
         $options['socket']['so_reuseport'] = true;
-        $options['socket']['tcp_nodelay'] = 1;
         $context = stream_context_create($options);
 
         // socket, bind, listen
@@ -315,7 +314,10 @@ class Server
 
         $this->mainSocket = $socket;
         stream_set_blocking($this->mainSocket, false);
-        $this->ioEvent->addEvent($this->mainSocket, Event::READ_EVENT, [$this, "accept"]);
+        // 设置禁用 Nagle 算法
+        $socketFd = socket_import_stream($socket);
+        socket_set_option($socketFd, SOL_TCP, TCP_NODELAY, 1);
+        $this->ioEvent->addEvent($socket, Event::READ_EVENT, [$this, "accept"]);
     }
 
     /**
