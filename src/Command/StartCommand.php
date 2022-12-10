@@ -39,14 +39,22 @@ class StartCommand extends Command
             record(RECORD_DEBUG, "客户端连接, ip=%s\n", $connection->getAddress());
         });
         $server->on(EVENT_HTTP_REQUEST, function (Request $request, Response $response) {
+            $response->sendFile(trim($request->getPath(), "/"));
+//            $response->getConnection()->send("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nTransfer-Encoding: Chunked\r\n\r\n");
+//            $response->getConnection()->send("1\r\na\r\n");
+//            sleep(3);
+//            $response->getConnection()->send("2\r\nbc\r\n");
+//            sleep(3);
+//            $response->getConnection()->send("3\r\ndef\r\n");
+//            $response->getConnection()->send("0\r\n\r\n");
             //$response->sendFile(trim($request->getPath(), "/"));
             //$response->sendJson(["name" => 'cx', 'path' => $request->getPath()]);
-            $response->chunk("hello");
-            sleep(4);
-            $response->chunk("cx");
-            sleep(4);
-            $response->chunk("!");
-            $response->end();
+//            $response->chunk("hello");
+//            sleep(4);
+//            $response->chunk("cx");
+//            sleep(4);
+//            $response->chunk("!");
+//            $response->end();
 
 
         });

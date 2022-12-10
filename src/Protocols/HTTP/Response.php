@@ -193,4 +193,12 @@ class Response
     {
         self::$rootPath = $rootPath;
     }
+
+    /**
+     * @return TcpConnection
+     */
+    public function getConnection(): TcpConnection
+    {
+        return $this->connection;
+    }
 }
