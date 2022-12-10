@@ -156,7 +156,7 @@ class Request
     private function resolveQueyry($url)
     {
         $pathInfo = parse_url($url);
-        $this->path =  $pathInfo['path'];
+        $this->path =  urldecode($pathInfo['path']);
         isset($pathInfo['query']) && parse_str($pathInfo['query'], $this->query);
     }
 
