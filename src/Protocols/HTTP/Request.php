@@ -1,10 +1,9 @@
 <?php
 
-namespace Te\Protocols;
+namespace Te\Protocols\HTTP;
 
-use Te\Protocols\HTTP\File;
 
-class HttpContent
+class Request
 {
     /**
      * 报文内容

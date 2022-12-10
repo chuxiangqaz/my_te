@@ -2,8 +2,8 @@
 
 namespace Te\Command;
 
+use Te\Protocols\HTTP\Request;
 use Te\Protocols\HTTP\Response;
-use Te\Protocols\HttpContent;
 use Te\Server;
 use Te\TcpConnection;
 
@@ -23,7 +23,7 @@ class StartCommand extends Command
 
         $server = new Server($this->config);
 
-        $server->on(EVENT_HTTP_REQUEST, function (HttpContent $request, Response $response) {
+        $server->on(EVENT_HTTP_REQUEST, function (Request $request, Response $response) {
             print_r($request->getRequestBody());
             $response->send();
         });

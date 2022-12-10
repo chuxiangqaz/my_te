@@ -12,6 +12,6 @@ return [
     ],
     "pid" => "/tmp/te.pid",
     "http" => [
-        "tmp_path" => "./"
+        "tmp_path" => "./doc/"
     ]
 ];

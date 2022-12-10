@@ -2,6 +2,8 @@
 
 namespace Te\Protocols;
 
+use Te\Protocols\HTTP\Request;
+
 /**
  * HTTP 报文内容格式如下
  * @link https://www.runoob.com/http/http-messages.html
@@ -17,7 +19,7 @@ class HTTP implements Protocols
      */
     public function integrity($data): bool
     {
-        return (new HttpContent($data))->resolve()->isIntegrity();
+        return (new Request($data))->resolve()->isIntegrity();
     }
 
     /**
@@ -39,7 +41,7 @@ class HTTP implements Protocols
      */
     public function decode($data = '')
     {
-        $httpRequest = (new HttpContent($data));
+        $httpRequest = (new Request($data));
         $httpRequest->resolve();
         return $httpRequest;
     }
@@ -52,6 +54,6 @@ class HTTP implements Protocols
      */
     public function msgLen($data = ''): int
     {
-        return (new HttpContent($data))->resolve()->getMsgLen();
+        return (new Request($data))->resolve()->getMsgLen();
     }
 }
