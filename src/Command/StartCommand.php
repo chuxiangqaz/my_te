@@ -25,7 +25,6 @@ class StartCommand extends Command
             err("process is exist");
         }
 
-
         $server = new Server($this->config);
         $this->server = $server;
         $this->httpServer();
@@ -36,9 +35,15 @@ class StartCommand extends Command
     public function httpServer()
     {
         $server = $this->server;
+        $server->on(EVENT_CONNECT, function (Server $server, TcpConnection $connection) {
+            record(RECORD_DEBUG, "客户端连接, ip=%s\n", $connection->getAddress());
+        });
         $server->on(EVENT_HTTP_REQUEST, function (Request $request, Response $response) {
-            print_r($request);
-            $response->sendFile(trim($request->getPath(), "/"));
+            //$response->sendFile(trim($request->getPath(), "/"));
+            $response->sendJson(["name" => 'cx', 'path' => $request->getPath()]);
+        });
+        $server->on(EVENT_CLOSE, function (Server $server, TcpConnection $connection) {
+            record(RECORD_DEBUG, "客户端关闭了%s \n", $connection->getAddress());
         });
     }
 

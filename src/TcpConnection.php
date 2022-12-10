@@ -261,4 +261,9 @@ class TcpConnection
     {
         return $this->fd;
     }
+
+    public function close(): void
+    {
+        $this->server->closeClient($this->fd);
+    }
 }

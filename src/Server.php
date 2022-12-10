@@ -441,6 +441,7 @@ class Server
 
         };
         $this->ioEvent->addTimer("statistics", 1, [$this, "statistics"]);
+        $this->ioEvent->addTimer("heartbeat", 30, [$this, "heartbeat"]);
         pcntl_signal(SIGTERM, SIG_IGN, true);
         pcntl_signal(SIGINT, SIG_IGN, true);
         pcntl_signal(SIGQUIT, SIG_IGN, true);

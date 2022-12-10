@@ -149,6 +149,8 @@ class Response
         $this->header['server'] = "Te";
         $this->header['date'] = date(DATE_RFC2822);
         $this->header['content-length'] = strlen($this->body);
+        $this->header['Connection'] = "Keep-Alive";
+        $this->header['Keep-Alive'] = "timeout=30";
     }
 
     /**
