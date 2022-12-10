@@ -40,7 +40,15 @@ class StartCommand extends Command
         });
         $server->on(EVENT_HTTP_REQUEST, function (Request $request, Response $response) {
             //$response->sendFile(trim($request->getPath(), "/"));
-            $response->sendJson(["name" => 'cx', 'path' => $request->getPath()]);
+            //$response->sendJson(["name" => 'cx', 'path' => $request->getPath()]);
+            $response->chunk("hello");
+            sleep(4);
+            $response->chunk("cx");
+            sleep(4);
+            $response->chunk("!");
+            $response->end();
+
+
         });
         $server->on(EVENT_CLOSE, function (Server $server, TcpConnection $connection) {
             record(RECORD_DEBUG, "客户端关闭了%s \n", $connection->getAddress());

@@ -60,3 +60,8 @@ function absPath($path)
 
     return realpath(ROOT_PATH . '/' . $path);
 }
+
+function strTitle($value)
+{
+    return mb_convert_case($value, MB_CASE_TITLE, 'UTF-8');
+}

@@ -6,6 +6,7 @@ use Te\TcpConnection;
 
 class Response
 {
+    use Header;
 
     const JSON = "application/json";
 
@@ -26,10 +27,6 @@ class Response
      */
     private $httpCode = 200;
 
-    /**
-     * @var array
-     */
-    private $header;
 
     /**
      * @var string
@@ -40,6 +37,11 @@ class Response
      * @var string
      */
     private static $rootPath = '';
+
+    /**
+     * @var bool
+     */
+    private $chunkStart;
 
 
     public function __construct(TcpConnection $connection)
@@ -55,20 +57,10 @@ class Response
 
     public function contentType($contentType): Response
     {
-        return $this->setHeaers('content-type', $contentType);
-    }
-
-    public function heaers($heaers = []): Response
-    {
-        array_merge($this->header, $heaers);
+        $this->setHeader('Content-Type', $contentType);
         return $this;
     }
 
-    public function setHeaers($k, $v): Response
-    {
-        $this->header[$k] = $v;
-        return $this;
-    }
 
     /**
      * @param array $body
@@ -90,6 +82,7 @@ class Response
         $this->body = $body;
         $this->send();
     }
+
 
     /**
      * @param string $body
@@ -114,12 +107,43 @@ class Response
         $this->send();
     }
 
+    /**
+     * 用于分块传输
+     *
+     * @param $data
+     */
+    public function chunk($data)
+    {
+        if (!$this->chunkStart) {
+            $this->setHeader('Transfer-Encoding', 'Chunked');
+            $this->contentType(self::TEXT);
+            $this->body .= sprintf("%s\r\n%s\r\n", dechex(strlen($data)), $data);
+            $this->send();
+            $this->chunkStart = true;
+            return;
+        }
+
+        $this->connection->send(sprintf("%s\r\n%s\r\n", dechex(strlen($data)), $data));
+    }
+
+    /**
+     * 用于分块传输结束
+     */
+    public function end()
+    {
+        $this->connection->send(sprintf("%s\r\n\r\n", "0"));
+    }
 
     public function send()
     {
         $this->setDefaultHeader();
+
+        if (!$this->hasHeader('Transfer-Encoding')) {
+            $this->setHeader('Content-Length', strlen($this->body));
+        }
+
         $resContent = sprintf("HTTP/1.1 %d %s\r\n", $this->httpCode, self::MSG_LIST[$this->httpCode] ?? '');
-        foreach ($this->header as $k => $v) {
+        foreach ($this->headers() as $k => $v) {
             $resContent .= sprintf("%s: %s\r\n", $k, $v);
         }
 
@@ -146,11 +170,12 @@ class Response
      */
     private function setDefaultHeader()
     {
-        $this->header['server'] = "Te";
-        $this->header['date'] = date(DATE_RFC2822);
-        $this->header['content-length'] = strlen($this->body);
-        $this->header['Connection'] = "Keep-Alive";
-        $this->header['Keep-Alive'] = "timeout=30";
+        $this->setHeaders([
+            'Server' => 'Te',
+            'Date' => date(DATE_RFC2822),
+            'Connection' => 'Keep-Alive',
+            'Keep-Alive' => 'timeout=30'
+        ]);
     }
 
     /**

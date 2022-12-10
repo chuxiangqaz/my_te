@@ -5,6 +5,8 @@ namespace Te\Protocols\HTTP;
 
 class Request
 {
+    use Header;
+
     /**
      * 报文内容
      *
@@ -27,10 +29,6 @@ class Request
      */
     private $version;
 
-    /**
-     * @var array
-     */
-    private $header;
 
     /**
      * 请求正文的参数解析
@@ -141,12 +139,12 @@ class Request
             }
 
             $headerKV = explode(": ", $lineHeaderText);
-            $this->header[strtolower($headerKV[0])] = trim($headerKV[1] ?? '');
+            $this->setHeader($headerKV[0], $headerKV[1]);
         }
 
 
-        if (isset($this->header['content-length']) && $this->header['content-length'] > 0) {
-            $requestBodyLine = substr($this->package, $headLen, $this->header['content-length']);
+        if ($this->hasHeader('Content-Length') && $this->getHeader('Content-Length') > 0) {
+            $requestBodyLine = substr($this->package, $headLen, $this->getHeader('Content-Length'));
             $this->resolveRequestBody($requestBodyLine);
         }
 
@@ -156,7 +154,7 @@ class Request
     private function resolveQueyry($url)
     {
         $pathInfo = parse_url($url);
-        $this->path =  urldecode($pathInfo['path']);
+        $this->path = urldecode($pathInfo['path']);
         isset($pathInfo['query']) && parse_str($pathInfo['query'], $this->query);
     }
 
@@ -168,16 +166,17 @@ class Request
     private function resolveRequestBody(string $requestBodyLine)
     {
 
+        $contentType = $this->getHeader('Content-Type');
         switch (true) {
-            case !isset($this->header['content-type']):
+            case $contentType === null:
                 break;
-            case $this->header['content-type'] === 'application/json':
+            case $contentType === 'application/json':
                 $this->requestBody = json_decode($requestBodyLine, true);
                 break;
-            case $this->header['content-type'] === 'application/x-www-form-urlencoded';
+            case $contentType === 'application/x-www-form-urlencoded';
                 parse_str($requestBodyLine, $this->requestBody);
-            case str_starts_with($this->header['content-type'], 'multipart/form-data'):
-                $boundary = '--' . strAfter($this->header['content-type'], "boundary=");
+            case str_starts_with($contentType, 'multipart/form-data'):
+                $boundary = '--' . strAfter($contentType, "boundary=");
                 $formArr = explode($boundary, $requestBodyLine);
                 unset($formArr[count($formArr) - 1], $formArr[0]);
                 foreach ($formArr as $formItem) {
@@ -217,14 +216,6 @@ class Request
     public function getVersion(): string
     {
         return $this->version;
-    }
-
-    /**
-     * @return array
-     */
-    public function getHeader(): array
-    {
-        return $this->header;
     }
 
     /**
