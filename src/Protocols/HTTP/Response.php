@@ -36,6 +36,12 @@ class Response
      */
     private $body;
 
+    /**
+     * @var string
+     */
+    private static $rootPath = '';
+
+
     public function __construct(TcpConnection $connection)
     {
         $this->connection = $connection;
@@ -90,8 +96,20 @@ class Response
      */
     public function sendFile($file)
     {
-        $this->body = file_get_contents($file);
-        $contentType = mime_content_type($file);
+        $filePath = $this->staticFile($file);
+        if (!is_file($filePath)) {
+            $this->code(404);
+            $filePath = $this->staticFile("404.html");
+        } else {
+            $filePath = realpath($filePath);
+            if (!strAfter($filePath, self::$rootPath)) {
+                $this->code(403);
+                $filePath = $this->staticFile("403.html");
+            }
+        }
+
+        $this->body = file_get_contents($filePath);
+        $contentType = mime_content_type($filePath);
         $this->contentType($contentType);
         $this->send();
     }
@@ -111,6 +129,17 @@ class Response
     }
 
     /**
+     * 静态文件地址
+     *
+     * @param string $file
+     * @return string
+     */
+    public function staticFile($file): string
+    {
+        return rtrim(self::$rootPath, '/') . '/' . $file;
+    }
+
+    /**
      * 设置默认的相应头
      *
      * @return void
@@ -120,5 +149,21 @@ class Response
         $this->header['server'] = "Te";
         $this->header['date'] = date(DATE_RFC2822);
         $this->header['content-length'] = strlen($this->body);
+    }
+
+    /**
+     * @return string
+     */
+    public static function getRootPath(): string
+    {
+        return self::$rootPath;
+    }
+
+    /**
+     * @param string $rootPath
+     */
+    public static function setRootPath(string $rootPath): void
+    {
+        self::$rootPath = $rootPath;
     }
 }

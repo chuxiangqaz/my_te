@@ -243,7 +243,8 @@ class Server
         // 不然当监听只会触发一个子进程
         $this->ioEvent = new $this->setting['event']();
         cli_set_process_title("Te/work");
-        File::setTmpPath($this->setting['http']['tmp_path'] ?? '');
+        File::setTmpPath(absPath($this->setting['http']['tmp_path'] ?? ''));
+        Response::setRootPath(absPath($this->setting['http']['static']['root']));
         $this->listen();
         $this->registerEvent();
         $this->connectTask();

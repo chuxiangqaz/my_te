@@ -12,6 +12,9 @@ return [
     ],
     "pid" => "/tmp/te.pid",
     "http" => [
-        "tmp_path" => "./doc/img/"
+        "tmp_path" => "./doc/img/",
+        "static" => [
+            "root" => "./web/www"
+        ]
     ]
 ];

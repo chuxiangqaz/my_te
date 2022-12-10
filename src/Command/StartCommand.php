@@ -37,7 +37,8 @@ class StartCommand extends Command
     {
         $server = $this->server;
         $server->on(EVENT_HTTP_REQUEST, function (Request $request, Response $response) {
-            $response->sendJson(["name" => 'cx']);
+            print_r($request);
+            $response->sendFile(trim($request->getPath(), "/"));
         });
     }
 

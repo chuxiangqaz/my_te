@@ -157,7 +157,7 @@ class Request
     {
         $pathInfo = parse_url($url);
         $this->path =  $pathInfo['path'];
-        parse_str($pathInfo['query'], $this->query);
+        isset($pathInfo['query']) && parse_str($pathInfo['query'], $this->query);
     }
 
     /**
@@ -210,13 +210,6 @@ class Request
         return $this->method;
     }
 
-    /**
-     * @return string
-     */
-    public function getUrl(): string
-    {
-        return $this->url;
-    }
 
     /**
      * @return string
@@ -242,5 +235,12 @@ class Request
         return $this->requestBody;
     }
 
+    /**
+     * @return string
+     */
+    public function getPath(): string
+    {
+        return $this->path;
+    }
 
 }

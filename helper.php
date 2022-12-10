@@ -25,7 +25,7 @@ function record($level, $msg, ...$arg)
 {
     $msg = sprintf($msg, ...$arg);
     $pid = getmypid();
-    fprintf(STDOUT, "[$pid][$level]$msg" .PHP_EOL);
+    fprintf(STDOUT, "[$pid][$level]$msg" . PHP_EOL);
 }
 
 function strAfter($subject, $search)
@@ -46,4 +46,17 @@ function strRandom($length = 16): string
     }
 
     return $string;
+}
+
+function absPath($path)
+{
+    if ($path === '') {
+        return '';
+    }
+
+    if ($path[0] === '/') {
+        return $path;
+    }
+
+    return realpath(ROOT_PATH . '/' . $path);
 }
