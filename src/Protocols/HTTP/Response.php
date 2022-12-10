@@ -11,6 +11,10 @@ class Response
 
     const TEXT = "text/html";
 
+    const MSG_LIST = [
+        200 => "OK",
+        201 => "Created",
+    ];
 
     /**
      * @var TcpConnection
@@ -20,7 +24,7 @@ class Response
     /**
      * @var int
      */
-    private $httpCode;
+    private $httpCode = 200;
 
     /**
      * @var array
@@ -86,16 +90,35 @@ class Response
      */
     public function sendFile($file)
     {
-        $this->contentType(self::TEXT);
         $this->body = file_get_contents($file);
-        mime_content_type($file);
+        $contentType = mime_content_type($file);
+        $this->contentType($contentType);
         $this->send();
     }
 
 
     public function send()
     {
-        $ctx = "HTTP/1.1 200 OK\r\nContent-Length:5\r\n\r\nhello";
-        $this->connection->send($ctx);
+        $this->setDefaultHeader();
+        $resContent = sprintf("HTTP/1.1 %d %s\r\n", $this->httpCode, self::MSG_LIST[$this->httpCode] ?? '');
+        foreach ($this->header as $k => $v) {
+            $resContent .= sprintf("%s: %s\r\n", $k, $v);
+        }
+
+        $resContent .= "\r\n";
+        $resContent .= $this->body;
+        $this->connection->send($resContent);
+    }
+
+    /**
+     * 设置默认的相应头
+     *
+     * @return void
+     */
+    private function setDefaultHeader()
+    {
+        $this->header['server'] = "Te";
+        $this->header['date'] = date(DATE_RFC2822);
+        $this->header['content-length'] = strlen($this->body);
     }
 }
