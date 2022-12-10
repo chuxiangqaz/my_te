@@ -19,7 +19,7 @@ class HTTP implements Protocols
      */
     public function integrity($data): bool
     {
-        return (new Request($data))->resolve()->isIntegrity();
+        return (new Request($data))->checkIntegrity();
     }
 
     /**
@@ -41,9 +41,7 @@ class HTTP implements Protocols
      */
     public function decode($data = '')
     {
-        $httpRequest = (new Request($data));
-        $httpRequest->resolve();
-        return $httpRequest;
+        return (new Request($data))->resolve();
     }
 
     /**
@@ -54,6 +52,6 @@ class HTTP implements Protocols
      */
     public function msgLen($data = ''): int
     {
-        return (new Request($data))->resolve()->getMsgLen();
+        return (new Request($data))->msgLen();
     }
 }

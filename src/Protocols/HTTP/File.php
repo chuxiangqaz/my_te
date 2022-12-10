@@ -121,4 +121,12 @@ class File
     {
         return $this->nowFile;
     }
+
+
+    public function __destruct()
+    {
+        @unlink($this->tmpFileName);
+    }
+
+
 }

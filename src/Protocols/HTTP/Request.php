@@ -33,38 +33,23 @@ class Request
     private $header;
 
     /**
-     * 是否是完整数据
-     *
-     * @var bool
-     */
-    private $integrity;
-
-    /**
-     * 消息长度
-     *
-     * @var int
-     */
-    private $msgLen;
-
-    /**
-     * 头部长度
-     *
-     * @var int
-     */
-    private $headerLen;
-
-    /**
-     * 请求正文
-     * @var string
-     */
-    private $requestBodyLine;
-
-    /**
      * 请求正文的参数解析
      *
      * @var array
      */
     private $requestBody = [];
+
+    /**
+     * 请求头参数
+     *
+     * @var array
+     */
+    private $query = [];
+
+    /**
+     * @var string
+     */
+    private $path;
 
 
     /**
@@ -75,23 +60,76 @@ class Request
         $this->package = $package;
     }
 
+    /**
+     * 检测消息是否完成
+     */
+    public function checkIntegrity(): bool
+    {
+        $headLen = $this->headerLenByPackage();
+        if ($headLen === 0) {
+            return false;
+        }
+
+        $bodyLen = $this->bodyLenByPackage();
+
+        return strlen($this->package) >= $bodyLen + $headLen;
+    }
+
+    /**
+     * 解析请求头长度
+     *
+     * @return int
+     */
+    private function headerLenByPackage(): int
+    {
+        $headLen = stripos($this->package, "\r\n\r\n", 0);
+        if ($headLen === false) {
+            return 0;
+        }
+        return $headLen + 4;
+    }
+
+    /**
+     * 解析请求正文长度
+     *
+     * @return int
+     */
+    private function bodyLenByPackage(): int
+    {
+        $bodyLen = 0;
+        preg_match('/Content-Length: (.*?)\r\n/', $this->package, $contentLen);
+        if (isset($contentLen[1])) {
+            $bodyLen = $contentLen[1];
+        }
+
+        return (int)$bodyLen;
+    }
+
+    /**
+     * 消息长度
+     *
+     * @return int
+     */
+    public function msgLen(): int
+    {
+        return $this->headerLenByPackage() + $this->bodyLenByPackage();
+    }
+
+    /**
+     * 解析请求行和请求头和请求参数
+     *
+     * @return $this
+     */
     public function resolve()
     {
-        $this->integrity = true;
-        // 查找到请求头的位置
-        $headLen = stripos($this->package, "\r\n\r\n", 0);
-        $this->headerLen = $headLen;
-        if ($headLen === false) {
-            $this->integrity = false;
-            return $this;
-        }
+        $headLen = $this->headerLenByPackage();
 
         // 解析请求行
         $requestLineLen = stripos($this->package, "\r\n", 0);
         $requestLine = substr($this->package, 0, $requestLineLen);
         $requestLineArr = explode(" ", $requestLine);
         $this->method = $requestLineArr[0];
-        $this->url = $requestLineArr[1];
+        $this->resolveQueyry($requestLineArr[1]);
         $this->version = $requestLineArr[2];
 
         // 解析请求头
@@ -102,55 +140,47 @@ class Request
                 continue;
             }
 
-            $headerKV = explode(":", $lineHeaderText);
+            $headerKV = explode(": ", $lineHeaderText);
             $this->header[strtolower($headerKV[0])] = trim($headerKV[1] ?? '');
         }
 
-        // 解析消息长度
-        $this->msgLen = $headLen + 4;
-        if (isset($this->header['content-length'])) {
-            $this->msgLen += $this->header['content-length'];
-        }
 
-        // 判断消息是否完整
-        $this->integrity = strlen($this->package) >= $this->msgLen;
-
-        if ($this->integrity) {
-            $this->resolveRequestBody();
+        if (isset($this->header['content-length']) && $this->header['content-length'] > 0) {
+            $requestBodyLine = substr($this->package, $headLen, $this->header['content-length']);
+            $this->resolveRequestBody($requestBodyLine);
         }
 
         return $this;
     }
 
-    public function isIntegrity(): bool
+    private function resolveQueyry($url)
     {
-        return $this->integrity;
+        $pathInfo = parse_url($url);
+        $this->path =  $pathInfo['path'];
+        parse_str($pathInfo['query'], $this->query);
     }
 
-    private function resolveRequestBody()
+    /**
+     * 解析请求正文
+     *
+     * @param string $requestBodyLine
+     */
+    private function resolveRequestBody(string $requestBodyLine)
     {
-        if (!$this->integrity) {
-            return;
-        }
 
-        if (!isset($this->header['content-length']) || $this->header['content-length'] == 0) {
-            return;
-        }
-
-        $this->requestBodyLine = substr($this->package, $this->headerLen + 4, $this->header['content-length']);
         switch (true) {
             case !isset($this->header['content-type']):
                 break;
             case $this->header['content-type'] === 'application/json':
-                $this->requestBody = json_decode($this->requestBodyLine, true);
+                $this->requestBody = json_decode($requestBodyLine, true);
                 break;
             case $this->header['content-type'] === 'application/x-www-form-urlencoded';
-                parse_str($this->requestBodyLine, $this->requestBody);
+                parse_str($requestBodyLine, $this->requestBody);
             case str_starts_with($this->header['content-type'], 'multipart/form-data'):
                 $boundary = '--' . strAfter($this->header['content-type'], "boundary=");
-                $formArr = explode($boundary, $this->requestBodyLine);
+                $formArr = explode($boundary, $requestBodyLine);
                 unset($formArr[count($formArr) - 1], $formArr[0]);
-                foreach ($formArr as $i => $formItem) {
+                foreach ($formArr as $formItem) {
                     $itemInfo = explode("\r\n\r\n", $formItem);
                     preg_match('/name="(.*?)"/', $itemInfo[0], $matches);
                     $key = $matches[1];
@@ -171,13 +201,6 @@ class Request
         }
     }
 
-    /**
-     * @return string
-     */
-    public function getPackage(): string
-    {
-        return $this->package;
-    }
 
     /**
      * @return string
@@ -209,22 +232,6 @@ class Request
     public function getHeader(): array
     {
         return $this->header;
-    }
-
-    /**
-     * @return int
-     */
-    public function getMsgLen(): int
-    {
-        return $this->msgLen;
-    }
-
-    /**
-     * @return int
-     */
-    public function getHeaderLen(): int
-    {
-        return $this->headerLen;
     }
 
     /**
