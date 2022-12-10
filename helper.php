@@ -25,3 +25,23 @@ function record($level, $msg, ...$arg)
     $pid = getmypid();
     fprintf(STDOUT, "[$pid][$level]$msg" .PHP_EOL);
 }
+
+function strAfter($subject, $search)
+{
+    return $search === '' ? $subject : array_reverse(explode($search, $subject, 2))[0];
+}
+
+function strRandom($length = 16): string
+{
+    $string = '';
+
+    while (($len = strlen($string)) < $length) {
+        $size = $length - $len;
+
+        $bytes = random_bytes($size);
+
+        $string .= substr(str_replace(['/', '+', '='], '', base64_encode($bytes)), 0, $size);
+    }
+
+    return $string;
+}

@@ -32,7 +32,7 @@ class TcpConnection
      *
      * @var int
      */
-    private $recvBufferSize = 1024 * 100;
+    private $recvBufferSize = 1024 * 1024 * 2;
 
 
     /**

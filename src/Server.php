@@ -4,6 +4,7 @@ namespace Te;
 
 use Opis\Closure\SerializableClosure;
 use Te\Event\Event;
+use Te\Protocols\HTTP\File;
 use Te\Protocols\Protocols;
 
 class Server
@@ -239,6 +240,7 @@ class Server
         // 不然当监听只会触发一个子进程
         $this->ioEvent = new $this->setting['event']();
         cli_set_process_title("Te/work");
+        File::setTmpPath($this->setting['http']['tmp_path'] ?? '');
         $this->listen();
         $this->registerEvent();
         $this->connectTask();
