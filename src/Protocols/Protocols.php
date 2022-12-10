@@ -24,9 +24,9 @@ interface Protocols
      * 解码单条消息
      *
      * @param string $data 表示单个报文的内容
-     * @return string 返回报文内容
+     * @return mixed 返回报文内容
      */
-    public function decode($data = ''): string;
+    public function decode($data = '');
 
     /**
      * 获取一条消息总长度

@@ -5,6 +5,7 @@ namespace Te;
 use Opis\Closure\SerializableClosure;
 use Te\Event\Event;
 use Te\Protocols\HTTP\File;
+use Te\Protocols\HTTP\Response;
 use Te\Protocols\Protocols;
 
 class Server
@@ -146,12 +147,14 @@ class Server
      *
      * @param TcpConnection $connection
      * @param int $msgLen
-     * @param string $msg
+     * @param mixed $msg
      */
-    public function onRecvMsg(TcpConnection $connection, int $msgLen, string $msg)
+    public function onRecvMsg(TcpConnection $connection, int $msgLen, $msg)
     {
         $this->msgNum++;
         $this->runEvent(EVENT_RECEIVE, $this, $connection, $msgLen, $msg);
+        $this->runEvent(EVENT_HTTP_REQUEST, $msg, new Response($connection));
+
     }
 
     /**
@@ -403,8 +406,8 @@ class Server
 
     public function runEvent($eventName, ...$args)
     {
-        if (!isset($eventName)) {
-            err("not register event:$eventName");
+        if (!isset($this->event[$eventName])) {
+            return;
         }
 
         $this->event[$eventName](...$args);

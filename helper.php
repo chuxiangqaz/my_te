@@ -13,6 +13,8 @@ const EVENT_WRITE_BUFFER_FULL = 'write_buffer_full';
 const EVENT_TASK_RECEIVE = 'task_receive';
 const EVENT_TASK_CLOSE = 'task_close';
 
+const EVENT_HTTP_REQUEST = 'http_request';
+
 function err($errMsg, $errCode = -1)
 {
     record(RECORD_ERR, $errMsg);

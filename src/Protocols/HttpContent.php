@@ -118,7 +118,6 @@ class HttpContent
 
         if ($this->integrity) {
             $this->resolveRequestBody();
-            dd($this);
         }
 
         return $this;
@@ -171,6 +170,70 @@ class HttpContent
                     }
                 }
         }
+    }
+
+    /**
+     * @return string
+     */
+    public function getPackage(): string
+    {
+        return $this->package;
+    }
+
+    /**
+     * @return string
+     */
+    public function getMethod(): string
+    {
+        return $this->method;
+    }
+
+    /**
+     * @return string
+     */
+    public function getUrl(): string
+    {
+        return $this->url;
+    }
+
+    /**
+     * @return string
+     */
+    public function getVersion(): string
+    {
+        return $this->version;
+    }
+
+    /**
+     * @return array
+     */
+    public function getHeader(): array
+    {
+        return $this->header;
+    }
+
+    /**
+     * @return int
+     */
+    public function getMsgLen(): int
+    {
+        return $this->msgLen;
+    }
+
+    /**
+     * @return int
+     */
+    public function getHeaderLen(): int
+    {
+        return $this->headerLen;
+    }
+
+    /**
+     * @return array
+     */
+    public function getRequestBody(): array
+    {
+        return $this->requestBody;
     }
 
 
