@@ -4,6 +4,8 @@ return [
     "address" => "tcp://0.0.0.0:6379",
     "protocols" => \Te\Protocols\HTTP::class,
     "event" => \Te\Event\Epoll::class,
+    "daemon" => true,
+    "log" => ROOT_PATH . '/te.log',
     "work" => 2,
     "task" => [
         "num" => 2,

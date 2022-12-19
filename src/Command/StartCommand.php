@@ -28,7 +28,6 @@ class StartCommand extends Command
         $server = new Server($this->config);
         $this->server = $server;
         $this->httpServer();
-        file_put_contents($this->config["pid"], getmypid());
         $server->start();
     }
 

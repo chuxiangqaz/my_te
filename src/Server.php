@@ -187,16 +187,26 @@ class Server
 
     public function start()
     {
-        cli_set_process_title("Te/master");
-        // 获取 matser 进程id
-        $this->setMasterPid();
-        // 注册主进程信号
-        $this->registerSigV2();
+        ($this->setting['daemon'] ?? false) && $this->daemon();
+
+        $this->master();
         // fork child process
         $this->forkWork($this->setting['work'], [$this, 'work'], [$this, 'workSuccess']);
         $this->forkWork($this->setting['task']['num'], [$this, 'task'], [$this, 'taskSuccess']);
         // 等待子进程退出
         $this->waitChild();
+    }
+
+    /**
+     * master 进程处理逻辑
+     */
+    public function master() :void
+    {
+        cli_set_process_title("Te/master");
+        // 获取 master 进程id
+        $this->setMasterPid();
+        // 注册主进程信号
+        $this->registerSigV2();
     }
 
     public function workSuccess($pid)
@@ -556,6 +566,8 @@ class Server
      */
     private function setMasterPid()
     {
+        @file_put_contents($this->setting["pid"], getmypid());
+
         $pid = getmypid();
         if ($pid === false) {
             err("获取master pid 失败");
@@ -603,5 +615,59 @@ class Server
 
         $len = socket_sendto($this->workClientSocket, $msg, strlen($msg), 0, $serverSocket);
         record(RECORD_INFO, "send task msg len = %d", $len);
+    }
+
+    /**
+     * 开启守护进程
+     * @link https://blog.csdn.net/m0_46613023/article/details/122121373
+     */
+    private function daemon(): void
+    {
+        // 父进程有可能是进程组的组长（在命令行启动的情况下），从而不能够执行后面要执行的setsid函数。
+        // 因此调用fork函数，子进程继承了父进程的进程组ID，并且拥有自己的进程ID，一定不会是进程组的组长，所以子进程一定可以执行后面要执行的setsid函数。
+        // 守护进程(daemon)是一类在后台运行的特殊进程。如果daemon是从终端命令行启动的，那么父进程退出会被shell检测到，shell会显示shell提示符， 从而让子进程在后台执行。
+        $pid = pcntl_fork();
+        if ($pid < 0) {
+            err("open daemon err : fork err!");
+        }
+
+        // 父进程退出
+        if ($pid > 0) {
+            exit(0);
+        }
+
+        // 这个函数的目的是切断与控制终端的所有关系，并且创建一个新的会话。
+        // 这一步确保了子进程不再归属于控制终端所关联的会话。
+        // 因此无论终端是否发送SIGINT、SIGQUIT或SIGTSTP信号，也无论终端是否断开，都与要创建的daemon进程无关，不 会影响到daemon进程的继续执行。
+        posix_setsid();
+
+        // 这一步的目的是让daemon进程创建文件的权限属性与shell脱离关系。因为默认情况下，进程的umask来源于父进程shell的umask。
+        // 如果不执行umask（0），那么父进程shell的umask就会影响到daemon 进程的umask。
+        // 如果用户改变了shell的umask，那么也就相当于改变了daemon的umask，就会造成daemon 进程每次执行的umask信息可能会不一致。
+        umask(000);
+
+        // 再执行一次fork函数的原因是，daemon进程有可能会打开一个终端设备。
+        // 如果daemon进程是会话的首进程，这个打开的终端设备有可能会成为daemon进程的控制终端。
+        // 为了确保万无一失，只有确保daemon进程不是会话的首进程，才能保证打开的终端设备不会自动成为控制终端。
+        // 因此，不得不执行第二次fork，fork之后，父进程退出，子进程继续。这时，子进程不再是会话的首进程，也不是进程组的首进程了。
+        $pid = pcntl_fork();
+        if ($pid < 0) {
+            err("open daemon err : fork err!");
+        }
+
+        if ($pid > 0) {
+            exit(0);
+        }
+
+        // 因为文件描述符0、1和2指向的就是控制终端。daemon进程已经不再与任意控制终端相关联，因此这三者都没有意义。
+        //一般来讲，关闭了之后，会打开/dev/null，并执行dup2函数，将0、1和2重定向到/dev/null。
+        //这个重定向是有意义的，防止了后面的程序在文件描述符0、1和2上执行I/O库函数而导致报错。
+        fclose(STDOUT);
+        fclose(STDERR);
+        fclose(STDIN);
+        fopen("/dev/null", "a+");
+        fopen("/dev/null", "a+");
+        fopen("/dev/null", "a+");
+
     }
 }

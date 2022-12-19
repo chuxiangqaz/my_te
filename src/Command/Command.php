@@ -26,7 +26,7 @@ abstract class Command
     {
         $this->args = $args;
         $this->fileName = $this->args[0] ?? '';
-        $this->config = require "config.php";
+        $this->config = config();
     }
 
     protected function masterExist(): bool

@@ -25,7 +25,12 @@ function record($level, $msg, ...$arg)
 {
     $msg = sprintf($msg, ...$arg);
     $pid = getmypid();
-    fprintf(STDOUT, "[$pid][$level]$msg" . PHP_EOL);
+
+    static $config;
+    if ($config === null) {
+        $log = fopen(config()['log'], "a+");
+    }
+    fprintf($log, "[$pid][$level]$msg" . PHP_EOL);
 }
 
 function strAfter($subject, $search)
@@ -64,4 +69,19 @@ function absPath($path)
 function strTitle($value)
 {
     return mb_convert_case($value, MB_CASE_TITLE, 'UTF-8');
+}
+
+/**
+ * 返回配置
+ *
+ * @return array
+ */
+function config(): array
+{
+    static $config;
+    if ($config === null) {
+        $config = require "./config.php";
+    }
+
+    return $config;
 }
