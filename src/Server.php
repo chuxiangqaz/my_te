@@ -4,9 +4,10 @@ namespace Te;
 
 use Opis\Closure\SerializableClosure;
 use Te\Event\Event;
+use Te\Protocols\HTTP;
 use Te\Protocols\HTTP\File;
 use Te\Protocols\HTTP\Response;
-use Te\Protocols\Protocols;
+use Te\Protocols\WS;
 
 class Server
 {
@@ -33,11 +34,6 @@ class Server
      * @var array
      */
     private $event;
-
-    /**
-     * @var Protocols
-     */
-    private $protocols;
 
     /**
      * 客户端数量
@@ -109,7 +105,6 @@ class Server
     {
         $this->setting += $setting;
         $this->address = $this->setting['address'];
-        $this->protocols = new $this->setting['protocols']();
         $this->statisticsTime = time();
     }
 
@@ -153,7 +148,26 @@ class Server
     {
         $this->msgNum++;
         $this->runEvent(EVENT_RECEIVE, $this, $connection, $msgLen, $msg);
-        $this->runEvent(EVENT_HTTP_REQUEST, $msg, new Response($connection));
+
+        if ($connection->getProtocols() instanceof HTTP) {
+            $this->runEvent(EVENT_HTTP_REQUEST, $msg, new Response($connection));
+        }
+
+        if ($connection->getProtocols() instanceof WS) {
+            if ($msg instanceof HTTP\Request) {
+                $response = new Response($connection);
+                $websocket = new WS\WebSocket();
+                if ($websocket->handshake($msg, $response)) {
+                    $this->runEvent(EVENT_WS_HANDSHAKE_SUCCESS, $msg);
+                } else {
+                    $this->runEvent(EVENT_WS_HANDSHAKE_FAIL, $msg);
+                    $this->closeClient($connection->getFd());
+                }
+            } else {
+                $this->runEvent(EVENT_WS_RECEIVE, $msg);
+            }
+
+        }
 
     }
 
@@ -200,7 +214,7 @@ class Server
     /**
      * master 进程处理逻辑
      */
-    public function master() :void
+    public function master(): void
     {
         cli_set_process_title("Te/master");
         // 获取 master 进程id
@@ -432,7 +446,7 @@ class Server
             record(RECORD_ERR, "access is not resource");
             return;
         }
-        $connection = new TcpConnection($fd, $address, $this, $this->protocols);
+        $connection = new TcpConnection($fd, $address, $this, $this->setting['protocols'] ?? '');
         self::$connection[(int)$fd] = $connection;
         $this->ioEvent->addEvent($fd, Event::READ_EVENT, [$connection, "recv"]);
         // 不添加可写事件,在需要写入的时候在添加可写事件，减少CPU通知消耗

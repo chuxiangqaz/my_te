@@ -2,10 +2,10 @@
 
 return [
     "address" => "tcp://0.0.0.0:6379",
-    "protocols" => \Te\Protocols\HTTP::class,
+    "protocols" => \Te\Protocols\WS::class,
     "event" => \Te\Event\Epoll::class,
-    "daemon" => true,
-    "log" => ROOT_PATH . '/te.log',
+    "daemon" => false,
+    "log" => 'php://stdout',
     "work" => 2,
     "task" => [
         "num" => 2,

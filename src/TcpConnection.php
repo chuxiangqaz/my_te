@@ -105,7 +105,7 @@ class TcpConnection
     public $heatTime = 0;
 
 
-    public function __construct($fd, $address, $server, ?Protocols $protocols)
+    public function __construct($fd, $address, $server, $protocols)
     {
         $this->fd = $fd;
         stream_set_blocking($fd, false);
@@ -113,7 +113,7 @@ class TcpConnection
         stream_set_write_buffer($fd, 0);
         $this->address = $address;
         $this->server = $server;
-        $this->protocols = $protocols;
+        $protocols !== "" && $this->protocols = new $protocols();
         $this->heatTime = time();
     }
 
@@ -265,5 +265,13 @@ class TcpConnection
     public function close(): void
     {
         $this->server->closeClient($this->fd);
+    }
+
+    /**
+     * @return Protocols
+     */
+    public function getProtocols()
+    {
+        return $this->protocols;
     }
 }

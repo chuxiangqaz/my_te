@@ -27,8 +27,19 @@ class StartCommand extends Command
 
         $server = new Server($this->config);
         $this->server = $server;
-        $this->httpServer();
+        $this->wsServer();
         $server->start();
+    }
+
+    public function wsServer()
+    {
+        $server = $this->server;
+        $server->on(EVENT_WS_HANDSHAKE_SUCCESS, function ($msg) {
+            record(RECORD_DEBUG, "websocket 握手成功");
+        });
+        $server->on(EVENT_WS_HANDSHAKE_FAIL, function ($msg) {
+            record(RECORD_DEBUG, "websocket 握手失败");
+        });
     }
 
     public function httpServer()
@@ -38,7 +49,8 @@ class StartCommand extends Command
             record(RECORD_DEBUG, "客户端连接, ip=%s\n", $connection->getAddress());
         });
         $server->on(EVENT_HTTP_REQUEST, function (Request $request, Response $response) {
-            $response->sendFile(trim($request->getPath(), "/"));
+            $response->sendText('s');
+            //$response->sendFile(trim($request->getPath(), "/"));
 //            $response->getConnection()->send("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nTransfer-Encoding: Chunked\r\n\r\n");
 //            $response->getConnection()->send("1\r\na\r\n");
 //            sleep(3);

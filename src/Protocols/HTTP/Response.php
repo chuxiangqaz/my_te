@@ -13,6 +13,7 @@ class Response
     const TEXT = "text/html";
 
     const MSG_LIST = [
+        101 => "Switching Protocols",
         200 => "OK",
         201 => "Created",
     ];
@@ -170,12 +171,18 @@ class Response
      */
     private function setDefaultHeader()
     {
-        $this->setHeaders([
+        $default = [
             'Server' => 'Te',
             'Date' => date(DATE_RFC2822),
             'Connection' => 'Keep-Alive',
             'Keep-Alive' => 'timeout=30'
-        ]);
+        ];
+
+        foreach ($default as $k => $v) {
+            !$this->hasHeader($k) && $this->setHeader($k, $v);
+        }
+
+
     }
 
     /**
