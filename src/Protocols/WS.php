@@ -3,6 +3,8 @@
 namespace Te\Protocols;
 
 use Te\Protocols\HTTP\Request;
+use Te\Protocols\HTTP\Response;
+use Te\Protocols\WS\Frame;
 
 /**
  * websocket 协议
@@ -30,6 +32,10 @@ class WS implements Protocols
      */
     public function integrity($data): bool
     {
+        if (strlen($data) <=0) {
+            return false;
+        }
+
         // 还没握手
         if ($this->status === self::STATUS_WAIT) {
             $request = new Request($data);
@@ -38,7 +44,7 @@ class WS implements Protocols
         }
 
         if ($this->status === self::STATUS_HANDSHAKE) {
-            // TODO
+            (new Frame($data));
 
         }
 
@@ -99,5 +105,13 @@ class WS implements Protocols
         }
 
         return false;
+    }
+
+    /**
+     * @param $status
+     */
+    public function setStatus($status)
+    {
+        $this->status = $status;
     }
 }

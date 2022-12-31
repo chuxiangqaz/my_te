@@ -161,7 +161,6 @@ class TcpConnection
         } else {
             // 判断数据是否完整
             while ($this->protocols->integrity($this->bufferData)) {
-
                 // 获取消息长度
                 $msgLen = $this->protocols->msgLen($this->bufferData);
                 $msg = substr($this->bufferData, 0, $msgLen);

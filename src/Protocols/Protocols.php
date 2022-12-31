@@ -2,6 +2,9 @@
 
 namespace Te\Protocols;
 
+use Te\Protocols\HTTP\Request;
+use Te\TcpConnection;
+
 interface Protocols
 {
     /**

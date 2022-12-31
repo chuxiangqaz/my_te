@@ -149,19 +149,23 @@ class Server
         $this->msgNum++;
         $this->runEvent(EVENT_RECEIVE, $this, $connection, $msgLen, $msg);
 
-        if ($connection->getProtocols() instanceof HTTP) {
+        $protoocls = $connection->getProtocols();
+        if ($protoocls instanceof HTTP) {
             $this->runEvent(EVENT_HTTP_REQUEST, $msg, new Response($connection));
         }
 
-        if ($connection->getProtocols() instanceof WS) {
+        if ($protoocls instanceof WS) {
             if ($msg instanceof HTTP\Request) {
                 $response = new Response($connection);
                 $websocket = new WS\WebSocket();
                 if ($websocket->handshake($msg, $response)) {
+                    $protoocls->setStatus(WS::STATUS_HANDSHAKE);
                     $this->runEvent(EVENT_WS_HANDSHAKE_SUCCESS, $msg);
                 } else {
+                    $protoocls->setStatus(WS::STATUS_FAILED);
                     $this->runEvent(EVENT_WS_HANDSHAKE_FAIL, $msg);
                     $this->closeClient($connection->getFd());
+                    $protoocls->setStatus(WS::STATUS_CLOSE);
                 }
             } else {
                 $this->runEvent(EVENT_WS_RECEIVE, $msg);
@@ -465,7 +469,7 @@ class Server
 
         };
         $this->ioEvent->addTimer("statistics", 1, [$this, "statistics"]);
-        $this->ioEvent->addTimer("heartbeat", 30, [$this, "heartbeat"]);
+        //$this->ioEvent->addTimer("heartbeat", 30, [$this, "heartbeat"]);
         pcntl_signal(SIGTERM, SIG_IGN, true);
         pcntl_signal(SIGINT, SIG_IGN, true);
         pcntl_signal(SIGQUIT, SIG_IGN, true);

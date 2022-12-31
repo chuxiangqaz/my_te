@@ -208,4 +208,12 @@ class Response
     {
         return $this->connection;
     }
+
+    /**
+     * @return int
+     */
+    public function getHttpCode(): int
+    {
+        return $this->httpCode;
+    }
 }
