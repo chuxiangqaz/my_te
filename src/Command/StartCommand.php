@@ -4,6 +4,7 @@ namespace Te\Command;
 
 use Te\Protocols\HTTP\Request;
 use Te\Protocols\HTTP\Response;
+use Te\Protocols\WS\Frame;
 use Te\Server;
 use Te\TcpConnection;
 
@@ -40,6 +41,13 @@ class StartCommand extends Command
         $server->on(EVENT_WS_HANDSHAKE_FAIL, function ($msg) {
             record(RECORD_DEBUG, "websocket 握手失败");
         });
+
+        //监听WebSocket消息事件
+        /** @var Frame $frame 消息类型 */
+        $server->on(EVENT_WS_MESSAGE, function ($frame) {
+            echo "收到消息". $frame->getPayload();
+        });
+
     }
 
     public function httpServer()

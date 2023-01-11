@@ -17,7 +17,7 @@ const EVENT_HTTP_REQUEST = 'http_request';
 
 const EVENT_WS_HANDSHAKE_SUCCESS = 'ws_handshake_success';
 const EVENT_WS_HANDSHAKE_FAIL = 'ws_handshake_fail';
-const EVENT_WS_RECEIVE = 'ws_receive';
+const EVENT_WS_MESSAGE = 'ws_message';
 
 function err($errMsg, $errCode = -1)
 {

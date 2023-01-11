@@ -3,7 +3,6 @@
 namespace Te\Protocols;
 
 use Te\Protocols\HTTP\Request;
-use Te\Protocols\HTTP\Response;
 use Te\Protocols\WS\Frame;
 
 /**
@@ -32,19 +31,20 @@ class WS implements Protocols
      */
     public function integrity($data): bool
     {
-        if (strlen($data) <=0) {
+        if (strlen($data) <= 2) {
             return false;
         }
 
-        // 还没握手
+        // 未握手发送HTTP请求
         if ($this->status === self::STATUS_WAIT) {
             $request = new Request($data);
             return $request->checkIntegrity();
 
         }
 
+        // 握手成功发送数据帧
         if ($this->status === self::STATUS_HANDSHAKE) {
-            (new Frame($data));
+            return (new Frame($data))->integrity();
 
         }
 
@@ -59,26 +59,35 @@ class WS implements Protocols
      */
     public function encode($data = '')
     {
-        return $data;
+        // 未握手发送HTTP请求
+        if ($this->status === self::STATUS_WAIT) {
+            return $data;
+
+        }
+
+        // 握手成功发送数据帧
+        if ($this->status === self::STATUS_HANDSHAKE) {
+            ;
+        }
     }
 
     /**
      * 解码单条消息
      *
      * @param string $data 表示单个报文的内容
-     * @return mixed 返回报文内容
+     * @return Frame|Request|false 返回报文内容
      */
     public function decode($data = '')
     {
-        // 还没握手
+        // 未握手发送HTTP请求
         if ($this->status === self::STATUS_WAIT) {
             return (new Request($data))->resolve();
 
         }
 
+        // 握手成功发送数据帧
         if ($this->status === self::STATUS_HANDSHAKE) {
-            // TODO
-
+            return (new Frame($data))->resolve();
         }
 
         return false;
@@ -92,16 +101,16 @@ class WS implements Protocols
      */
     public function msgLen($data = ''): int
     {
-        // 还没握手
+        // 未握手发送HTTP请求
         if ($this->status === self::STATUS_WAIT) {
             $request = new Request($data);
             return $request->msgLen();
 
         }
 
+        // 握手成功发送数据帧
         if ($this->status === self::STATUS_HANDSHAKE) {
-            // TODO
-
+            return (new Frame($data))->msgLen();
         }
 
         return false;

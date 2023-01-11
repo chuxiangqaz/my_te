@@ -155,9 +155,9 @@ class Server
         }
 
         if ($protoocls instanceof WS) {
+            $websocket = new WS\WebSocket();
             if ($msg instanceof HTTP\Request) {
                 $response = new Response($connection);
-                $websocket = new WS\WebSocket();
                 if ($websocket->handshake($msg, $response)) {
                     $protoocls->setStatus(WS::STATUS_HANDSHAKE);
                     $this->runEvent(EVENT_WS_HANDSHAKE_SUCCESS, $msg);
@@ -167,8 +167,8 @@ class Server
                     $this->closeClient($connection->getFd());
                     $protoocls->setStatus(WS::STATUS_CLOSE);
                 }
-            } else {
-                $this->runEvent(EVENT_WS_RECEIVE, $msg);
+            } else if ($msg instanceof WS\Frame) {
+                $this->runEvent(EVENT_WS_MESSAGE, $websocket, $msg);
             }
 
         }
