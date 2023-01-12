@@ -248,4 +248,19 @@ class Frame
     {
         return $this->integrity;
     }
+
+    /**
+     * 获取关闭的 状态码
+     *
+     * @return int
+     */
+    public function closeCode(): int
+    {
+        $bins = [];
+        for ($i = 0; $i < $this->payloadLen; $i++) {
+            $bins[] = ord($this->payload[$i]);
+        }
+
+        return $this->mreageBin(...$bins);
+    }
 }

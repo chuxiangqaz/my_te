@@ -5,6 +5,27 @@ namespace Te\Protocols;
 use Te\Protocols\HTTP\Request;
 use Te\Protocols\WS\Frame;
 
+
+/**
++-+-+-+-+-------+-+-------------+-------------------------------+
+|F|R|R|R| opcode|M| Payload len |    Extended payload length    |
+|I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
+|N|V|V|V|       |S|             |   (if payload len==126/127)   |
+| |1|2|3|       |K|             |                               |
++-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
+|     Extended payload length continued, if payload len == 127  |
++ - - - - - - - - - - - - - - - +-------------------------------+
+|                               |Masking-key, if MASK set to 1  |
++-------------------------------+-------------------------------+
+| Masking-key (continued)       |          Payload Data         |
++-------------------------------- - - - - - - - - - - - - - - - +
+:                     Payload Data continued ...                :
++ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
+|                     Payload Data continued ...                |
++---------------------------------------------------------------+
+
+ **/
+
 /**
  * websocket 协议
  * @link  https://zhuanlan.zhihu.com/p/407711596
@@ -59,16 +80,7 @@ class WS implements Protocols
      */
     public function encode($data = '')
     {
-        // 未握手发送HTTP请求
-        if ($this->status === self::STATUS_WAIT) {
             return $data;
-
-        }
-
-        // 握手成功发送数据帧
-        if ($this->status === self::STATUS_HANDSHAKE) {
-            ;
-        }
     }
 
     /**

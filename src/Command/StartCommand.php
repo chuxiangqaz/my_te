@@ -5,6 +5,7 @@ namespace Te\Command;
 use Te\Protocols\HTTP\Request;
 use Te\Protocols\HTTP\Response;
 use Te\Protocols\WS\Frame;
+use Te\Protocols\WS\WebSocket;
 use Te\Server;
 use Te\TcpConnection;
 
@@ -43,9 +44,15 @@ class StartCommand extends Command
         });
 
         //监听WebSocket消息事件
-        /** @var Frame $frame 消息类型 */
-        $server->on(EVENT_WS_MESSAGE, function ($frame) {
-            echo "收到消息". $frame->getPayload();
+        $server->on(EVENT_WS_MESSAGE, function (WebSocket $websocket, Frame $frame) {
+            record(RECORD_INFO, "收到消息:%s", $frame->getPayload());
+            $websocket->pushText("hello");
+
+        });
+
+        $server->on(EVENT_WS_CLOSE, function (TcpConnection $connection, Frame $frame) {
+            dd($frame->closeCode());
+            record(RECORD_INFO, "连接关闭:%s", $connection->getAddress());
         });
 
     }

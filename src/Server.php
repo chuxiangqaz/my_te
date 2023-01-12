@@ -155,7 +155,7 @@ class Server
         }
 
         if ($protoocls instanceof WS) {
-            $websocket = new WS\WebSocket();
+            $websocket = new WS\WebSocket($connection);
             if ($msg instanceof HTTP\Request) {
                 $response = new Response($connection);
                 if ($websocket->handshake($msg, $response)) {
@@ -168,7 +168,17 @@ class Server
                     $protoocls->setStatus(WS::STATUS_CLOSE);
                 }
             } else if ($msg instanceof WS\Frame) {
-                $this->runEvent(EVENT_WS_MESSAGE, $websocket, $msg);
+                switch ($msg->getOpcode()) {
+                    case 0x1:
+                    case 0x02:
+                        $this->runEvent(EVENT_WS_MESSAGE, $websocket, $msg);
+                        break;
+                    case 0x8:
+                        $this->runEvent(EVENT_WS_CLOSE, $connection, $msg);
+                        $this->closeClient($connection->getFd());
+                        break;
+                }
+
             }
 
         }

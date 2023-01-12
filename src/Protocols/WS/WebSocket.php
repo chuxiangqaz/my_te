@@ -4,6 +4,7 @@ namespace Te\Protocols\WS;
 
 use Te\Protocols\HTTP\Request;
 use Te\Protocols\HTTP\Response;
+use Te\TcpConnection;
 
 class WebSocket
 {
@@ -15,6 +16,20 @@ class WebSocket
     private $key;
 
     const MAGIC_NUMBER = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+    /**
+     * @var TcpConnection
+     */
+    private $connection;
+
+
+    /**
+     * @param string $key
+     */
+    public function __construct(TcpConnection $connection)
+    {
+        $this->connection = $connection;
+    }
+
 
     /**
      * 发送websocket的握手
@@ -100,5 +115,48 @@ class WebSocket
         }
 
         return true;
+    }
+
+    public function pushText($data)
+    {
+        $frame = $this->makeResponseFrame($data);
+        $this->connection->send($frame);
+    }
+
+    /**
+     * 组装响应数据帧，响应数据帧不需要mask key
+     *
+     * @param $data
+     * @param int $opcode
+     * @return string
+     */
+    public function makeResponseFrame($data, $opcode = 0x1): string
+    {
+        $frame = "";
+        // 组装第一个字节 FIN RSV 1 ~ 3 Opcode
+        $frame .= chr(0b10000000 + $opcode);
+        $len = strlen($data);
+        // 拼接消息长度
+        if ($len <= 125) {
+            $frame .= chr($len);
+        } else if ($len <= 65535) {
+            $frame .= chr(126);
+            $frame .= chr($len >> 8 & 0xff);
+            $frame .= chr($len >> 0 & 0xff);
+        } else {
+            $frame .= chr(127);
+            $frame .= chr($len >> 56 & 0xff);
+            $frame .= chr($len >> 48 & 0xff);
+            $frame .= chr($len >> 40 & 0xff);
+            $frame .= chr($len >> 32 & 0xff);
+            $frame .= chr($len >> 24 & 0xff);
+            $frame .= chr($len >> 16 & 0xff);
+            $frame .= chr($len >> 8 & 0xff);
+            $frame .= chr($len >> 0 & 0xff);
+        }
+
+        $frame .= $data;
+
+        return $frame;
     }
 }
