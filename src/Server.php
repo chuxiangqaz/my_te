@@ -177,6 +177,9 @@ class Server
                         $this->runEvent(EVENT_WS_CLOSE, $connection, $msg);
                         $this->closeClient($connection->getFd());
                         break;
+                    case 0x9:
+                        $websocket->pong($msg->getPayload());
+                        break;
                 }
 
             }

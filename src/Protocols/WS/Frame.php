@@ -136,6 +136,7 @@ class Frame
         }
         $this->payload = $data;
         $this->integrity = true;
+
         return $this;
     }
 

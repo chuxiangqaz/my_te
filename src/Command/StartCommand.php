@@ -46,13 +46,11 @@ class StartCommand extends Command
         //监听WebSocket消息事件
         $server->on(EVENT_WS_MESSAGE, function (WebSocket $websocket, Frame $frame) {
             record(RECORD_INFO, "收到消息:%s", $frame->getPayload());
-            $websocket->pushText("hello");
-
+            $websocket->pong("s");
         });
 
         $server->on(EVENT_WS_CLOSE, function (TcpConnection $connection, Frame $frame) {
-            dd($frame->closeCode());
-            record(RECORD_INFO, "连接关闭:%s", $connection->getAddress());
+            record(RECORD_INFO, "连接关闭:code=%d,ip=%s", $frame->closeCode(), $connection->getAddress());
         });
 
     }

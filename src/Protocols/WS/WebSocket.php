@@ -159,4 +159,10 @@ class WebSocket
 
         return $frame;
     }
+
+    public function pong($pload)
+    {
+        $frame = $this->makeResponseFrame($pload, 0x0A);
+        $this->connection->send($frame);
+    }
 }
