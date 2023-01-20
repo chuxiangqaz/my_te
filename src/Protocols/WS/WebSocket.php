@@ -165,4 +165,12 @@ class WebSocket
         $frame = $this->makeResponseFrame($pload, 0x0A);
         $this->connection->send($frame);
     }
+
+    /**
+     * @return TcpConnection
+     */
+    public function getConnection(): TcpConnection
+    {
+        return $this->connection;
+    }
 }

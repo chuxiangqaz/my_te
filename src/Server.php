@@ -108,6 +108,14 @@ class Server
         $this->statisticsTime = time();
     }
 
+    /**
+     * @return TcpConnection[]
+     */
+    public static function getConnection(): array
+    {
+        return self::$connection;
+    }
+
     public function on(string $eventName, \Closure $fu)
     {
         $this->event[$eventName] = $fu;
@@ -171,7 +179,7 @@ class Server
                 switch ($msg->getOpcode()) {
                     case 0x1:
                     case 0x02:
-                        $this->runEvent(EVENT_WS_MESSAGE, $websocket, $msg);
+                        $this->runEvent(EVENT_WS_MESSAGE, $this, $websocket, $msg);
                         break;
                     case 0x8:
                         $this->runEvent(EVENT_WS_CLOSE, $connection, $msg);

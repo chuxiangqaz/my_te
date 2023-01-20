@@ -44,9 +44,20 @@ class StartCommand extends Command
         });
 
         //监听WebSocket消息事件
-        $server->on(EVENT_WS_MESSAGE, function (WebSocket $websocket, Frame $frame) {
-            record(RECORD_INFO, "收到消息:%s", $frame->getPayload());
-            $websocket->pong("s");
+        $server->on(EVENT_WS_MESSAGE, function (Server $server, WebSocket $websocket, Frame $frame) {
+            $senConnection = $websocket->getConnection();
+            $sendData = $frame->getPayload();
+
+            record(RECORD_INFO, "client=%s send msg=%s", $senConnection->getAddress(), $sendData);
+            print_r(count($server->getConnection()));
+            foreach ($server->getConnection() as $connection) {
+                if ($connection === $senConnection) {
+                    continue;
+                }
+
+                record(RECORD_DEBUG, "给客户端转发消息:%s", $connection->getAddress());
+                (new WebSocket($connection))->pushText(sprintf("[%s]:%s", $senConnection->getAddress(), $sendData));
+            }
         });
 
         $server->on(EVENT_WS_CLOSE, function (TcpConnection $connection, Frame $frame) {

@@ -6,7 +6,7 @@ return [
     "event" => \Te\Event\Epoll::class,
     "daemon" => false,
     "log" => 'php://stdout',
-    "work" => 2,
+    "work" => 1,
     "task" => [
         "num" => 2,
         "client_socket" => "/tmp/te_client_%d.socket",
